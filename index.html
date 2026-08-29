@@ -4,11 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="application-name" content="Workout Assistant">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
 <meta name="theme-color" content="#4db8ff">
-<title>Workout Assistant • Dashboard Rev3.9</title>
+<title>Workout Assistant • Dashboard Rev4.1</title>
 <meta name="description" content="Dashboard workout fleksibel dengan Guided Workout Mode, progress mingguan, dan mode terang/gelap.">
 <style>
 :root{
@@ -928,6 +935,14 @@ if(S.guide&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="fin
 }
 })();
 
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
