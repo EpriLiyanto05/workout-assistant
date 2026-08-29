@@ -1,9 +1,417 @@
+Jum, 24 Jul pukul 15.30
+coba pelajari dulu untuk garis potongnya 
+keterangan step repeat ini dihilangkan saja, cukup keterangan ukuran seperti yang NUP
+coba buat tema tampilan web nya seperti contoh digambar ini, tersedia mode terang dan gelap, dan juga icon CG ganti saja menjadi icon gambar dumblee
+icon temanya ini saja, dan birunya tetap biru sebelumnya saja 
+dalam tampilan HP icon gelap terang dihilangkan saja, dan icon yang di tengah tersebut dipinda ke pojok mengganti icon gelap terang, nah mode polihannya seperti garis tiga, bisa di klik untuk memilih menu
+yang bagian tengah kosong ini, bisa diisi dengan Workout Assistant, dengan font tebal
+Dianalisis
+from pathlib import Path
+import shutil, zipfile
+
+src = Path("/mnt/data/CG_Workout_Assistant_Rev3_5_MobileMenu")
+dst = Path("/mnt/data/CG_Workout_Assistant_Rev3_6_MobileTitle")
+
+if dst.exists():
+    shutil.rmtree(dst)
+shutil.copytree(src, dst)
+
+index = dst / "index.html"
+text = index.read_text(encoding="utf-8")
+
+# Version
+text = text.replace("Workout Assistant • Dashboard Rev3.5", "Workout Assistant • Dashboard Rev3.6")
+
+# Add mobile title styling after mobile menu button.
+old_css = """.mobile-menu-btn svg{width:22px;height:22px}
+.mobile-menu{"""
+new_css = """.mobile-menu-btn svg{width:22px;height:22px}
+.mobile-top-title{
+  display:none;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  color:#fff;
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.mobile-menu{"""
+if old_css not in text:
+    raise RuntimeError("CSS title anchor not found")
+text = text.replace(old_css, new_css)
+
+# Make sidebar position relative and show centered title on mobile.
+old_mobile = """  .sidebar{
+    position:static;height:auto;min-height:0;
+    flex-direction:row;justify-content:space-between;
+    padding:10px 12px;border-bottom:1px solid #20231f
+  }
+  .brand-mark{width:48px;height:48px;border-radius:15px}"""
+new_mobile = """  .sidebar{
+    position:relative;height:auto;min-height:0;
+    flex-direction:row;justify-content:space-between;
+    padding:10px 12px;border-bottom:1px solid #20231f
+  }
+  .mobile-top-title{display:block}
+  .brand-mark{width:48px;height:48px;border-radius:15px}"""
+if old_mobile not in text:
+    raise RuntimeError("Mobile sidebar block not found")
+text = text.replace(old_mobile, new_mobile)
+
+# Insert title between brand and menu/navigation area.
+old_html = """    </div>
+    <nav class="nav" aria-label="Navigasi">"""
+new_html = """    </div>
+    <div class="mobile-top-title">Workout Assistant</div>
+    <nav class="nav" aria-label="Navigasi">"""
+if old_html not in text:
+    raise RuntimeError("Sidebar title insertion anchor not found")
+text = text.replace(old_html, new_html)
+
+index.write_text(text, encoding="utf-8")
+
+readme = dst / "README.md"
+rt = readme.read_text(encoding="utf-8")
+rt += """
+## Rev 3.6 — Mobile Header Title
+
+- Bagian kosong di tengah header mobile diisi tulisan **Workout Assistant**.
+- Posisi judul dibuat tepat di tengah antara ikon dumbbell dan tombol hamburger.
+- Font dibuat tebal agar terasa seperti header aplikasi.
+- Perubahan hanya berlaku pada tampilan HP.
+"""
+readme.write_text(rt, encoding="utf-8")
+
+zip_path = Path("/mnt/data/CG_Workout_Assistant_Rev3_6_MobileTitle.zip")
+if zip_path.exists():
+    zip_path.unlink()
+
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for p in dst.rglob("*"):
+        if p.is_file():
+            zf.write(p, p.relative_to(dst.parent))
+
+print("Created:", zip_path)
+print("Index:", index)
+
+STDOUT/STDERR
+Created: /mnt/data/CG_Workout_Assistant_Rev3_6_MobileTitle.zip
+Index: /mnt/data/CG_Workout_Assistant_Rev3_6_MobileTitle/index.html
+
+
+Bisa bro, sudah saya revisi jadi Rev 3.6.
+
+Di tampilan HP sekarang bagian tengah header diisi:
+
+Workout Assistant
+
+Dengan:
+
+posisi tepat di tengah
+font tebal
+warna putih
+tetap rapi di antara ikon dumbbell dan menu hamburger
+
+Download CG Workout Assistant Rev3.6 ZIP
+
+Open index.html 
+
+index.html
+HTML
+revisi juga untuk tampilan web, icon icon bisa ditekan, misal menekan menu lain dibawah home, nah warna birunya pindah keicon yang ditekan, dan ketika memilih menu itu, bagian dasar berubah warna sesuai tema, misal memilih program workout nah kotak tersebut berubah warna
+Dianalisis
+from pathlib import Path
+import shutil, zipfile, re
+
+src = Path("/mnt/data/CG_Workout_Assistant_Rev3_6_MobileTitle")
+dst = Path("/mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation")
+
+if dst.exists():
+    shutil.rmtree(dst)
+shutil.copytree(src, dst)
+
+index = dst / "index.html"
+text = index.read_text(encoding="utf-8")
+
+# Version
+text = text.replace("Workout Assistant • Dashboard Rev3.6", "Workout Assistant • Dashboard Rev3.7")
+
+# Add nav active/selected panel CSS.
+css_anchor = """.nav a.active{background:var(--lime);color:#111}
+.nav svg{width:22px;height:22px}"""
+css_repl = """.nav a.active{
+  background:var(--lime);
+  color:#111;
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb),.18);
+}
+.nav svg{width:22px;height:22px}
+.nav-target{
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.nav-target.nav-selected{
+  background:rgba(var(--accent-rgb),.10);
+  border-color:var(--lime);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb),.16),var(--shadow);
+}
+.nav-target.nav-selected>.card-head{
+  background:rgba(var(--accent-rgb),.08);
+  border-bottom-color:rgba(var(--accent-rgb),.28);
+}
+.nav-target.nav-selected .today{
+  background:
+    radial-gradient(circle at 85% 20%,rgba(var(--accent-rgb),.30),transparent 26%),
+    linear-gradient(145deg,rgba(var(--accent-rgb),.07),var(--surface));
+}
+"""
+if css_anchor not in text:
+    raise RuntimeError("Nav CSS anchor not found")
+text = text.replace(css_anchor, css_repl)
+
+# Desktop nav: add data-nav attributes.
+text = text.replace(
+    '<a href="#dashboard" class="active" title="Dashboard">',
+    '<a href="#dashboard" class="active" title="Dashboard" data-nav="dashboard">'
+)
+text = text.replace(
+    '<a href="#program" title="Program Workout">',
+    '<a href="#program" title="Program Workout" data-nav="program">'
+)
+text = text.replace(
+    '<a href="#roadmap" title="Roadmap">',
+    '<a href="#roadmap" title="Roadmap" data-nav="roadmap">'
+)
+text = text.replace(
+    '<a href="#settings" title="Pengaturan" class="desktop-only">',
+    '<a href="#settings" title="Pengaturan" class="desktop-only" data-nav="settings">'
+)
+
+# Add panel IDs/classes to the primary dashboard card.
+first_card = '''          <section class="card">
+            <div class="card-body">
+              <div class="today">'''
+first_card_new = '''          <section class="card nav-target" id="homePanel" data-panel="dashboard">
+            <div class="card-body">
+              <div class="today">'''
+if first_card not in text:
+    raise RuntimeError("Home panel block not found")
+text = text.replace(first_card, first_card_new, 1)
+
+# Add nav-target class/data-panel to existing section cards.
+text = text.replace(
+    '<section class="card" id="program">',
+    '<section class="card nav-target" id="program" data-panel="program">'
+)
+text = text.replace(
+    '<section class="card" id="settings">',
+    '<section class="card nav-target" id="settings" data-panel="settings">'
+)
+text = text.replace(
+    '<section class="card" id="roadmap">',
+    '<section class="card nav-target" id="roadmap" data-panel="roadmap">'
+)
+
+# Mobile links get data-nav too.
+text = text.replace(
+    '<a href="#dashboard" data-mobile-link>',
+    '<a href="#dashboard" data-mobile-link data-nav="dashboard">'
+)
+text = text.replace(
+    '<a href="#program" data-mobile-link>',
+    '<a href="#program" data-mobile-link data-nav="program">'
+)
+text = text.replace(
+    '<a href="#roadmap" data-mobile-link>',
+    '<a href="#roadmap" data-mobile-link data-nav="roadmap">'
+)
+text = text.replace(
+    '<a href="#settings" data-mobile-link>',
+    '<a href="#settings" data-mobile-link data-nav="settings">'
+)
+
+# Add JS behavior before existing mobile menu setup.
+js_anchor = '''const mobileMenuToggle=$("mobileMenuToggle"),mobileMenu=$("mobileMenu");'''
+js_insert = r'''function selectNavigation(name,{scroll=true}={}){
+  const safe=["dashboard","program","roadmap","settings"].includes(name)?name:"dashboard";
+
+  document.querySelectorAll(".nav [data-nav]").forEach(link=>{
+    link.classList.toggle("active",link.dataset.nav===safe);
+  });
+
+  document.querySelectorAll(".nav-target").forEach(panel=>{
+    panel.classList.toggle("nav-selected",panel.dataset.panel===safe);
+  });
+
+  if(scroll){
+    const target=safe==="dashboard"?document.getElementById("dashboard"):document.querySelector(`[data-panel="${safe}"]`);
+    if(target){
+      const y=target.getBoundingClientRect().top+window.scrollY-18;
+      window.scrollTo({top:y,behavior:"smooth"});
+    }
+  }
+}
+
+document.querySelectorAll("[data-nav]").forEach(link=>{
+  link.addEventListener("click",e=>{
+    e.preventDefault();
+    selectNavigation(link.dataset.nav,{scroll:true});
+    history.replaceState(null,"",link.getAttribute("href"));
+  });
+});
+
+const initialNav=location.hash==="#program"?"program":location.hash==="#roadmap"?"roadmap":location.hash==="#settings"?"settings":"dashboard";
+selectNavigation(initialNav,{scroll:false});
+
+const mobileMenuToggle=$("mobileMenuToggle"),mobileMenu=$("mobileMenu");'''
+if js_anchor not in text:
+    raise RuntimeError("Mobile JS anchor not found")
+text = text.replace(js_anchor, js_insert)
+
+# Ensure mobile menu close still works after nav click - existing data-mobile-link handlers remain.
+index.write_text(text, encoding="utf-8")
+
+# README
+readme = dst / "README.md"
+rt = readme.read_text(encoding="utf-8")
+rt += """
+## Rev 3.7 — Active Navigation Desktop
+
+- Ikon sidebar desktop sekarang benar-benar berfungsi sebagai navigasi.
+- Warna aktif berpindah mengikuti menu yang diklik.
+- Menu yang tersedia:
+  - Dashboard / Home
+  - Program Workout
+  - Roadmap
+  - Pengaturan
+- Ketika sebuah menu dipilih, panel/kotak yang sesuai ikut mendapatkan warna aksen dari tema aktif.
+- Contoh: memilih **Program Workout** akan memindahkan highlight biru ke ikon workout dan memberi aksen biru pada kotak Program Harian.
+- Perilaku ini juga disinkronkan dengan menu hamburger pada tampilan mobile.
+"""
+readme.write_text(rt, encoding="utf-8")
+
+zip_path = Path("/mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation.zip")
+if zip_path.exists():
+    zip_path.unlink()
+
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for p in dst.rglob("*"):
+        if p.is_file():
+            zf.write(p, p.relative_to(dst.parent))
+
+print("Created:", zip_path)
+print("Index:", index)
+print("README:", readme)
+
+STDOUT/STDERR
+Created: /mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation.zip
+Index: /mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation/index.html
+README: /mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation/README.md
+
+
+Siap bro, sudah saya revisi jadi Rev 3.7.
+
+Sekarang di tampilan web/desktop:
+
+ikon sidebar bisa ditekan;
+highlight warna tema akan berpindah ke ikon yang aktif;
+menu Home, Program Workout, Roadmap, dan Pengaturan semuanya terhubung;
+saat menu dipilih, halaman otomatis scroll ke bagian tersebut;
+panel/kotak yang dipilih ikut mendapat aksen warna sesuai tema aktif.
+
+Contohnya:
+klik Program Workout → ikon workout jadi biru → kotak Program Harian ikut mendapat aksen biru.
+
+Kalau nanti warna tema diganti merah/pink/kuning/hijau, highlight menu dan panel otomatis mengikuti warna tersebut.
+
+Download CG Workout Assistant Rev3.7 ZIP
+
+Open index.html 
+
+index.html
+HTML
+icon gelap terang yang di bawah hapus saja karena sudah ada diatas
+Dianalisis
+from pathlib import Path
+import shutil, zipfile
+
+src = Path("/mnt/data/CG_Workout_Assistant_Rev3_7_ActiveNavigation")
+dst = Path("/mnt/data/CG_Workout_Assistant_Rev3_8_RemoveBottomTheme")
+
+if dst.exists():
+    shutil.rmtree(dst)
+shutil.copytree(src, dst)
+
+index = dst / "index.html"
+text = index.read_text(encoding="utf-8")
+
+text = text.replace("Workout Assistant • Dashboard Rev3.7", "Workout Assistant • Dashboard Rev3.8")
+
+# Remove the bottom sidebar theme toggle button entirely.
+old_block = '''    <div class="sidebar-spacer"></div>
+    <button id="themeToggle" title="Ganti tema" aria-label="Ganti tema">
+      <span id="themeIcon">☾</span>
+    </button>
+  </aside>'''
+
+new_block = '''    <div class="sidebar-spacer"></div>
+  </aside>'''
+
+if old_block not in text:
+    raise RuntimeError("Bottom theme toggle block not found")
+text = text.replace(old_block, new_block)
+
+# Make applyTheme tolerate removed bottom icon; already does, but clean obsolete handler if present.
+text = text.replace(
+    '$("themeToggle").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");\n',
+    ''
+)
+
+index.write_text(text, encoding="utf-8")
+
+readme = dst / "README.md"
+rt = readme.read_text(encoding="utf-8")
+rt += """
+## Rev 3.8
+
+- Ikon mode gelap/terang di bagian bawah sidebar desktop dihapus.
+- Kontrol mode gelap/terang tetap tersedia di bagian atas dashboard.
+- Tampilan sidebar sekarang lebih bersih.
+"""
+readme.write_text(rt, encoding="utf-8")
+
+zip_path = Path("/mnt/data/CG_Workout_Assistant_Rev3_8_RemoveBottomTheme.zip")
+if zip_path.exists():
+    zip_path.unlink()
+
+with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    for p in dst.rglob("*"):
+        if p.is_file():
+            zf.write(p, p.relative_to(dst.parent))
+
+print("Created:", zip_path)
+print("Index:", index)
+
+STDOUT/STDERR
+Created: /mnt/data/CG_Workout_Assistant_Rev3_8_RemoveBottomTheme.zip
+Index: /mnt/data/CG_Workout_Assistant_Rev3_8_RemoveBottomTheme/index.html
+
+
+Siap bro, sudah saya hapus ikon gelap/terang yang di bagian bawah sidebar.
+
+Sekarang kontrol tema hanya ada di bagian atas, jadi sidebar lebih bersih.
+
+Download CG Workout Assistant Rev3.8 ZIP
+
+Open index.html 
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Workout Assistant • Dashboard Rev3.4</title>
+<title>Workout Assistant • Dashboard Rev3.8</title>
 <meta name="description" content="Dashboard workout fleksibel dengan Guided Workout Mode, progress mingguan, dan mode terang/gelap.">
 <style>
 :root{
@@ -85,9 +493,63 @@ button{cursor:pointer}
   transition:.18s ease;
 }
 .nav a:hover,.nav button:hover{background:#151916;color:#dce9c6}
-.nav a.active{background:var(--lime);color:#111}
+.nav a.active{
+  background:var(--lime);
+  color:#111;
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb),.18);
+}
 .nav svg{width:22px;height:22px}
+.nav-target{
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.nav-target.nav-selected{
+  background:rgba(var(--accent-rgb),.10);
+  border-color:var(--lime);
+  box-shadow:0 0 0 1px rgba(var(--accent-rgb),.16),var(--shadow);
+}
+.nav-target.nav-selected>.card-head{
+  background:rgba(var(--accent-rgb),.08);
+  border-bottom-color:rgba(var(--accent-rgb),.28);
+}
+.nav-target.nav-selected .today{
+  background:
+    radial-gradient(circle at 85% 20%,rgba(var(--accent-rgb),.30),transparent 26%),
+    linear-gradient(145deg,rgba(var(--accent-rgb),.07),var(--surface));
+}
+
 .sidebar-spacer{flex:1}
+.mobile-menu-wrap{display:none;position:relative}
+.mobile-menu-btn{
+  width:44px;height:44px;border:0;border-radius:13px;
+  background:#ffffff;color:#111;display:grid;place-items:center
+}
+.mobile-menu-btn svg{width:22px;height:22px}
+.mobile-top-title{
+  display:none;
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  color:#fff;
+  font-size:17px;
+  font-weight:900;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.mobile-menu{
+  position:absolute;right:0;top:52px;z-index:80;min-width:190px;
+  padding:8px;border:1px solid var(--line);border-radius:16px;
+  background:var(--surface);box-shadow:0 18px 50px rgba(0,0,0,.18);
+  display:none
+}
+.mobile-menu.show{display:block}
+.mobile-menu a,.mobile-menu button{
+  width:100%;display:flex;align-items:center;gap:10px;
+  padding:11px 12px;border:0;background:transparent;color:var(--text);
+  border-radius:12px;text-decoration:none;text-align:left
+}
+.mobile-menu a:hover,.mobile-menu button:hover{background:var(--surface-2)}
+.mobile-menu svg{width:18px;height:18px;flex:0 0 auto}
 .content{
   min-width:0;
   padding:20px;
@@ -342,16 +804,17 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 @media(max-width:760px){
   .app-shell{grid-template-columns:1fr}
   .sidebar{
-    position:static;height:auto;min-height:0;
+    position:relative;height:auto;min-height:0;
     flex-direction:row;justify-content:space-between;
     padding:10px 12px;border-bottom:1px solid #20231f
   }
+  .mobile-top-title{display:block}
   .brand-mark{width:48px;height:48px;border-radius:15px}
   .brand-mark svg{width:29px;height:29px}
-  .nav{display:flex;width:auto;gap:5px}
-  .nav a,.nav button{width:44px;height:44px;border-radius:13px}
+  .nav{display:none}
   .sidebar-spacer{display:none}
-  .nav .desktop-only{display:none}
+  #themeToggle{display:none}
+  .mobile-menu-wrap{display:block}
   .content{padding:12px}
   .topbar{padding:13px 14px}
   .top-actions .chip{display:none}
@@ -376,24 +839,49 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
         <path d="M6 27v10M58 27v10" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
       </svg>
     </div>
+    <div class="mobile-top-title">Workout Assistant</div>
     <nav class="nav" aria-label="Navigasi">
-      <a href="#dashboard" class="active" title="Dashboard">
+      <a href="#dashboard" class="active" title="Dashboard" data-nav="dashboard">
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </a>
-      <a href="#program" title="Program Workout">
+      <a href="#program" title="Program Workout" data-nav="program">
         <svg viewBox="0 0 24 24" fill="none"><path d="M5 8v8M8 6v12M16 6v12M19 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </a>
-      <a href="#roadmap" title="Roadmap">
+      <a href="#roadmap" title="Roadmap" data-nav="roadmap">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 3v3M18 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </a>
-      <a href="#settings" title="Pengaturan" class="desktop-only">
+      <a href="#settings" title="Pengaturan" class="desktop-only" data-nav="settings">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 13.5v-3l-2-.7-.6-1.5.9-1.9-2.1-2.1-1.9.9-1.5-.6L11 2H8l-.7 2-1.5.6-1.9-.9-2.1 2.1.9 1.9-.6 1.5L0 10v3l2 .7.6 1.5-.9 1.9 2.1 2.1 1.9-.9 1.5.6.8 2.1h3l.7-2 1.5-.6 1.9.9 2.1-2.1-.9-1.9.6-1.5 2.1-.3Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
       </a>
     </nav>
+
+    <div class="mobile-menu-wrap">
+      <button class="mobile-menu-btn" id="mobileMenuToggle" type="button" aria-label="Buka menu" title="Menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="mobile-menu" id="mobileMenu" role="menu" aria-label="Menu navigasi">
+        <a href="#dashboard" data-mobile-link data-nav="dashboard">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="#program" data-mobile-link data-nav="program">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 8v8M8 6v12M16 6v12M19 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Program Workout</span>
+        </a>
+        <a href="#roadmap" data-mobile-link data-nav="roadmap">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M6 3v3M18 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span>Roadmap</span>
+        </a>
+        <a href="#settings" data-mobile-link data-nav="settings">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="1.8"/><path d="M19 13.5v-3l-2-.7-.6-1.5.9-1.9-2.1-2.1-1.9.9-1.5-.6L11 2H8l-.7 2-1.5.6-1.9-.9-2.1 2.1.9 1.9-.6 1.5L0 10v3l2 .7.6 1.5-.9 1.9 2.1 2.1 1.9-.9 1.5.6.8 2.1h3l.7-2 1.5-.6 1.9.9 2.1-2.1-.9-1.9.6-1.5 2.1-.3Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          <span>Pengaturan</span>
+        </a>
+      </div>
+    </div>
+
     <div class="sidebar-spacer"></div>
-    <button id="themeToggle" title="Ganti tema" aria-label="Ganti tema">
-      <span id="themeIcon">☾</span>
-    </button>
   </aside>
 
   <main class="content" id="dashboard">
@@ -444,7 +932,7 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 
       <section class="main-grid">
         <div class="stack">
-          <section class="card">
+          <section class="card nav-target" id="homePanel" data-panel="dashboard">
             <div class="card-body">
               <div class="today">
                 <div class="eyebrow">PROGRAM HARI INI</div>
@@ -462,7 +950,7 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
             </div>
           </section>
 
-          <section class="card" id="program">
+          <section class="card nav-target" id="program" data-panel="program">
             <div class="card-head"><h2>Program Harian</h2><button class="btn secondary" id="completeDay">Tandai Hari Selesai</button></div>
             <div class="card-body">
               <div class="week-strip" id="weekStrip"></div>
@@ -484,7 +972,7 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
         </div>
 
         <aside class="stack">
-          <section class="card" id="settings">
+          <section class="card nav-target" id="settings" data-panel="settings">
             <div class="card-head"><h2>Pengaturan Program</h2></div>
             <div class="card-body">
               <div class="settings">
@@ -506,7 +994,7 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
             </div>
           </section>
 
-          <section class="card" id="roadmap">
+          <section class="card nav-target" id="roadmap" data-panel="roadmap">
             <div class="card-head"><h2>Roadmap Latihan</h2></div>
             <div class="card-body">
               <div class="timeline">
@@ -649,7 +1137,6 @@ $("phaseSelect").onchange=e=>{stopGuideTimer();S.phase=+e.target.value;S.guide=n
 $("durationSelect").onchange=e=>{S.duration=+e.target.value;save();render()};
 $("completeDay").onclick=()=>{const k=`${S.phase}-${S.day}`;S.done[k]=!S.done[k];save();render()};
 $("resetAll").onclick=()=>{if(confirm("Reset semua progress workout?")){const theme=localStorage.getItem(THEME_KEY),accent=localStorage.getItem(ACCENT_KEY);localStorage.removeItem("cgWorkoutState");if(theme)localStorage.setItem(THEME_KEY,theme);if(accent)localStorage.setItem(ACCENT_KEY,accent);location.reload()}};
-$("themeToggle").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
 $("themeToggleTop").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
 const paletteToggle=$("paletteToggle"),palettePopover=$("palettePopover");
 if(paletteToggle&&palettePopover){
@@ -786,6 +1273,58 @@ function renderGuide(){
   $("manualRestBtn").onclick=()=>startRest(e[2]);
 }
 
+function selectNavigation(name,{scroll=true}={}){
+  const safe=["dashboard","program","roadmap","settings"].includes(name)?name:"dashboard";
+
+  document.querySelectorAll(".nav [data-nav]").forEach(link=>{
+    link.classList.toggle("active",link.dataset.nav===safe);
+  });
+
+  document.querySelectorAll(".nav-target").forEach(panel=>{
+    panel.classList.toggle("nav-selected",panel.dataset.panel===safe);
+  });
+
+  if(scroll){
+    const target=safe==="dashboard"?document.getElementById("dashboard"):document.querySelector(`[data-panel="${safe}"]`);
+    if(target){
+      const y=target.getBoundingClientRect().top+window.scrollY-18;
+      window.scrollTo({top:y,behavior:"smooth"});
+    }
+  }
+}
+
+document.querySelectorAll("[data-nav]").forEach(link=>{
+  link.addEventListener("click",e=>{
+    e.preventDefault();
+    selectNavigation(link.dataset.nav,{scroll:true});
+    history.replaceState(null,"",link.getAttribute("href"));
+  });
+});
+
+const initialNav=location.hash==="#program"?"program":location.hash==="#roadmap"?"roadmap":location.hash==="#settings"?"settings":"dashboard";
+selectNavigation(initialNav,{scroll:false});
+
+const mobileMenuToggle=$("mobileMenuToggle"),mobileMenu=$("mobileMenu");
+if(mobileMenuToggle&&mobileMenu){
+  mobileMenuToggle.addEventListener("click",(e)=>{
+    e.stopPropagation();
+    const open=!mobileMenu.classList.contains("show");
+    mobileMenu.classList.toggle("show",open);
+    mobileMenuToggle.setAttribute("aria-expanded",String(open));
+  });
+  mobileMenu.addEventListener("click",e=>e.stopPropagation());
+  document.querySelectorAll("[data-mobile-link]").forEach(link=>{
+    link.addEventListener("click",()=>{
+      mobileMenu.classList.remove("show");
+      mobileMenuToggle.setAttribute("aria-expanded","false");
+    });
+  });
+  document.addEventListener("click",()=>{
+    mobileMenu.classList.remove("show");
+    mobileMenuToggle.setAttribute("aria-expanded","false");
+  });
+}
+
 render();
 if(S.guide&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="finished"){
   $("resumeWorkout").style.display="inline-block";
@@ -795,3 +1334,5 @@ if(S.guide&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="fin
 </script>
 </body>
 </html>
+index.html
+HTML
