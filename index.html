@@ -392,6 +392,13 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 .rest-state{text-align:center}
 .rest-time{font-size:64px;line-height:1;font-weight:950;margin:13px 0 7px}
 .rest-sub{color:var(--muted)}
+.timed-note{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.45}
+.timed-side{
+  display:inline-flex;margin-top:8px;padding:6px 10px;border-radius:999px;
+  background:rgba(var(--accent-rgb),.10);
+  border:1px solid rgba(var(--accent-rgb),.28);
+  font-size:11px;font-weight:900
+}
 .rest-ring{
   width:130px;height:130px;border-radius:50%;margin:18px auto;display:grid;place-items:center;
   background:conic-gradient(var(--lime) var(--pct,100%),var(--line) 0);position:relative
@@ -702,6 +709,27 @@ function repsOnly(meta){
   const s=String(meta);
   return s.replace(/^\s*\d+\s*(?:set\s*)?[×x]\s*/i,"").replace(/^\s*\d+\s+set\s*[×x]?\s*/i,"") || s;
 }
+function timedInfo(meta){
+  const s=String(meta);
+  if(!/(?:dtk|detik)/i.test(s)) return null;
+
+  const range=s.match(/(\d+)\s*[–-]\s*(\d+)\s*(?:dtk|detik)/i);
+  let duration=null;
+
+  if(range){
+    duration=Number(range[1]); // mulai dari target minimum
+  }else{
+    const single=s.match(/(\d+)\s*(?:dtk|detik)/i);
+    if(single) duration=Number(single[1]);
+  }
+
+  if(!duration || duration<1) return null;
+  return {
+    duration,
+    range:range?`${range[1]}–${range[2]}`:null,
+    perSide:/\/\s*sisi|per\s+sisi/i.test(s)
+  };
+}
 function program(){return P[+S.phase][S.day]}
 function exKey(i){return `${S.phase}-${S.day}-${i}`}
 
@@ -765,7 +793,10 @@ document.querySelectorAll(".palette-swatch").forEach(btn=>btn.addEventListener("
 let guideTimer=null;
 function stopGuideTimer(){if(guideTimer){clearInterval(guideTimer);guideTimer=null}}
 function guideStateFrom(startExercise=0){
-  return {phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",remaining:0,restTotal:0};
+  return {
+    phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",
+    remaining:0,restTotal:0,timedTotal:0,timedSide:1,paused:false
+  };
 }
 function startGuide(startExercise=0){stopGuideTimer();S.guide=guideStateFrom(startExercise);save();showGuide();renderGuide()}
 function showGuide(){$("guided").classList.add("show");$("guided").scrollIntoView({behavior:"smooth",block:"start"})}
@@ -793,6 +824,72 @@ function playBeep(){
     const ctx=new C(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.value=.06;o.start();o.stop(ctx.currentTime+.16);
   }catch(_){}
 }
+function runTimedTimer(){
+  if(guideTimer) return;
+  guideTimer=setInterval(()=>{
+    const g=S.guide;
+    if(!g||g.status!=="timed"){stopGuideTimer();return}
+    if(g.paused) return;
+
+    g.remaining=Math.max(0,g.remaining-1);
+
+    if(g.remaining<=0){
+      const e=P[g.phase][g.day][2][g.exercise];
+      const ti=timedInfo(e[1]);
+
+      // Bila gerakan per sisi, otomatis lanjut ke sisi kedua.
+      if(ti&&ti.perSide&&g.timedSide===1){
+        g.timedSide=2;
+        g.remaining=ti.duration;
+        g.timedTotal=ti.duration;
+        vibrate();playBeep();
+        save();renderGuide();
+        return;
+      }
+
+      stopGuideTimer();
+      vibrate();playBeep();
+      finishTimedSet();
+      return;
+    }
+
+    save();
+    renderGuide();
+  },1000);
+}
+
+function startTimedSet(info){
+  const g=S.guide;if(!g)return;
+  stopGuideTimer();
+  g.status="timed";
+  g.remaining=info.duration;
+  g.timedTotal=info.duration;
+  g.timedSide=1;
+  g.paused=false;
+  save();
+  renderGuide();
+  runTimedTimer();
+}
+
+function finishTimedSet(){
+  const g=S.guide;if(!g)return;
+  const e=P[g.phase][g.day][2][g.exercise];
+  const totalSets=setCount(e[1]);
+  if(g.set>=totalSets) markCurrentExerciseDone();
+  g.paused=false;
+  save();
+  startRest(e[2]);
+}
+
+function toggleTimedPause(){
+  const g=S.guide;
+  if(!g||g.status!=="timed") return;
+  g.paused=!g.paused;
+  save();
+  renderGuide();
+  if(!g.paused) runTimedTimer();
+}
+
 function startRest(sec){
   stopGuideTimer();
   S.guide.status="rest";S.guide.remaining=sec;S.guide.restTotal=sec;save();renderGuide();
@@ -817,19 +914,24 @@ function advanceAfterRest(){
   const g=S.guide;if(!g)return;
   const exs=P[g.phase][g.day][2],e=exs[g.exercise],totalSets=setCount(e[1]);
   if(g.set<totalSets){
-    g.set++;g.status="exercise";g.remaining=0;save();render();renderGuide();return;
+    g.set++;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
   }
   if(g.exercise<exs.length-1){
-    g.exercise++;g.set=1;g.status="exercise";g.remaining=0;save();render();renderGuide();return;
+    g.exercise++;g.set=1;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
   }
   g.status="finished";S.done[`${g.phase}-${g.day}`]=true;save();render();renderGuide();
 }
 function skipRest(){stopGuideTimer();advanceAfterRest()}
 function skipExercise(){
   const g=S.guide;if(!g)return;
+  stopGuideTimer();
   const exs=P[g.phase][g.day][2];
-  if(g.exercise<exs.length-1){g.exercise++;g.set=1;g.status="exercise";g.remaining=0;save();renderGuide()}
-  else{g.status="finished";save();renderGuide()}
+  if(g.exercise<exs.length-1){
+    g.exercise++;g.set=1;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;
+    save();render();renderGuide();
+  }else{
+    g.status="finished";save();renderGuide();
+  }
 }
 
 function renderGuide(){
@@ -846,6 +948,56 @@ function renderGuide(){
   }
 
   const e=exs[g.exercise],sets=setCount(e[1]);
+  const ti=timedInfo(e[1]);
+
+  // Ini inti revisinya:
+  // begitu "Mulai Timer" / workout mencapai gerakan berwaktu, countdown langsung berjalan.
+  if(g.status==="exercise"&&ti){
+    startTimedSet(ti);
+    return;
+  }
+
+  if(g.status==="timed"){
+    const pct=g.timedTotal?Math.max(0,g.remaining/g.timedTotal*100):0;
+    const sideText=ti&&ti.perSide ? ` • Sisi ${g.timedSide}/2` : "";
+    $("guideBody").innerHTML=`<div class="rest-state">
+      <div class="guide-label">GERAKAN ${g.exercise+1} DARI ${exs.length} • SET ${g.set}/${sets}${sideText}</div>
+      <div class="guide-name">${e[0]}</div>
+      <div class="guide-reps">${e[1]}</div>
+
+      <div class="rest-ring" style="--pct:${pct}%"><strong>${g.remaining}s</strong></div>
+      <div class="rest-time">${String(Math.floor(g.remaining/60)).padStart(2,"0")}:${String(g.remaining%60).padStart(2,"0")}</div>
+
+      ${ti&&ti.perSide?`<div class="timed-side">Sisi ${g.timedSide} dari 2</div>`:""}
+      <div class="timed-note">
+        ${g.paused
+          ?"Timer dijeda."
+          :ti&&ti.range
+            ?`Timer berjalan otomatis • target awal ${ti.duration} detik dari rentang ${ti.range} detik`
+            :"Timer berjalan otomatis • ikuti hitungan di layar"}
+      </div>
+
+      <div class="guide-actions">
+        <button class="btn secondary primary" id="pauseTimedBtn">${g.paused?"▶ Lanjutkan":"⏸ Jeda"}</button>
+        <button class="btn ghost" id="plus5TimedBtn">+5 dtk</button>
+        <button class="btn ghost" id="finishTimedBtn">✓ Selesai Sekarang</button>
+        <button class="btn ghost" id="skipTimedBtn">Lewati Gerakan</button>
+      </div>
+    </div>`;
+
+    $("pauseTimedBtn").onclick=toggleTimedPause;
+    $("plus5TimedBtn").onclick=()=>{
+      g.remaining+=5;
+      g.timedTotal=Math.max(g.timedTotal,g.remaining);
+      save();renderGuide();
+    };
+    $("finishTimedBtn").onclick=()=>{stopGuideTimer();finishTimedSet()};
+    $("skipTimedBtn").onclick=skipExercise;
+
+    if(!g.paused) runTimedTimer();
+    return;
+  }
+
   if(g.status==="rest"){
     const pct=g.restTotal?Math.max(0,g.remaining/g.restTotal*100):0;
     $("guideBody").innerHTML=`<div class="rest-state">
@@ -932,6 +1084,7 @@ if(mobileMenuToggle&&mobileMenu){
 render();
 if(S.guide&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="finished"){
   $("resumeWorkout").style.display="inline-block";
+  if(S.guide.status==="timed"&&!S.guide.paused) runTimedTimer();
 }
 })();
 
