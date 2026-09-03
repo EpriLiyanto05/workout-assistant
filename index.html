@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
 <meta name="theme-color" content="#4db8ff">
-<title>Workout Assistant • Dashboard Rev4.10</title>
+<title>Workout Assistant • Dashboard Rev5.2</title>
 <meta name="description" content="Dashboard workout fleksibel dengan Guided Workout Mode, progress mingguan, dan mode terang/gelap.">
 <style>
 :root{
@@ -374,6 +374,41 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
   border:1px solid rgba(244,185,66,.3);
   color:var(--text);font-size:12px
 }
+.week-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.week-complete{
+  display:none;
+  margin-top:12px;
+  padding:14px;
+  border-radius:16px;
+  border:1px solid rgba(var(--accent-rgb),.35);
+  background:rgba(var(--accent-rgb),.09);
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.week-complete.show{display:flex}
+.week-complete strong{display:block;font-size:14px}
+.week-complete span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.week-progress-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:13px;
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.45;
+}
+.history-block{margin-top:12px}
+.history-title{font-size:11px;color:var(--muted);font-weight:800;margin-bottom:7px}
+.history-list{display:grid;gap:6px}
+.history-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)
+}
+.history-item strong{font-size:11px}
+.history-item span{font-size:10px;color:var(--muted);text-align:right}
+.history-empty{font-size:11px;color:var(--muted)}
 .week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
 .day{
   padding:10px 5px;text-align:center;border-radius:14px;
@@ -429,6 +464,14 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
   border:1px solid rgba(var(--accent-rgb),.28);
   font-size:11px;font-weight:900
 }
+.timer-ready-note{
+  max-width:420px;
+  margin:10px auto 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.timer-ready-note strong{color:var(--text)}
 .rest-ring{
   width:130px;height:130px;border-radius:50%;margin:18px auto;display:grid;place-items:center;
   background:conic-gradient(var(--lime) var(--pct,100%),var(--line) 0);position:relative
@@ -465,6 +508,8 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
   .metric{padding:14px}.metric .value{font-size:23px}.metric .bubble{display:none}
   .session-choice,.settings{grid-template-columns:1fr}
   .week-strip{grid-template-columns:repeat(4,1fr)}
+  .week-complete{align-items:stretch;flex-direction:column}
+  .week-head-actions{width:100%;justify-content:space-between}
   .exercise{grid-template-columns:auto 1fr}.exercise .timer-btn{grid-column:2}
   .guide-actions{grid-template-columns:1fr}.guide-actions .primary{grid-column:auto}
   .today-title{font-size:25px}.rest-time{font-size:52px}
@@ -604,9 +649,22 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
           </section>
 
           <section class="card nav-target" id="program" data-panel="program">
-            <div class="card-head"><h2>Program Harian</h2><button class="btn secondary" id="completeDay">Tandai Hari Selesai</button></div>
+            <div class="card-head">
+              <h2>Program Harian</h2>
+              <div class="week-head-actions">
+                <span class="chip" id="programWeekChip">Minggu 1</span>
+                <button class="btn secondary" id="completeDay">Tandai Hari Selesai</button>
+              </div>
+            </div>
             <div class="card-body">
               <div class="week-strip" id="weekStrip"></div>
+              <div class="week-complete" id="weekCompleteBanner">
+                <div>
+                  <strong id="weekCompleteTitle">Minggu selesai 🎉</strong>
+                  <span id="weekCompleteText">Progress minggu ini siap disimpan.</span>
+                </div>
+                <button class="btn success" id="nextWeekBtn">Simpan & Lanjut Minggu Berikutnya</button>
+              </div>
               <div style="height:14px"></div>
               <div class="exercise-list" id="exerciseList"></div>
 
@@ -629,10 +687,10 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
             <div class="card-head"><h2>Pengaturan Program</h2></div>
             <div class="card-body">
               <div class="settings">
-                <div class="field"><label>Fase latihan</label><select id="phaseSelect"><option value="1">Minggu 1–2</option><option value="2">Minggu 3–5</option><option value="3">Minggu 6+</option></select></div>
+                <div class="field"><label>Fase latihan</label><select id="phaseSelect"><option value="1">Bodyweight</option><option value="2">Dumbbell + Band</option><option value="3">Gym</option></select></div>
                 <div class="field"><label>Durasi target</label><select id="durationSelect"><option value="20">20 menit</option><option value="25">25 menit</option><option value="30">30 menit</option><option value="40">40 menit</option></select></div>
               </div>
-              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya otomatis. Jika lembur, sesi boleh dilewati tanpa digandakan esok hari.</div>
+              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya otomatis. Fase program dipilih manual dan tidak berubah saat masuk minggu berikutnya. Jika lembur, besok tetap lanjut Hari Program yang belum selesai.</div>
             </div>
           </section>
 
@@ -644,6 +702,11 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
                 <div class="stat"><div class="k">Konsistensi</div><div class="v" id="consistency"></div></div>
               </div>
               <div class="phase-box" id="phaseBox"></div>
+              <div class="week-progress-note" id="weekProgressNote"></div>
+              <div class="history-block">
+                <div class="history-title">Riwayat Minggu</div>
+                <div class="history-list" id="weekHistory"></div>
+              </div>
             </div>
           </section>
 
@@ -651,9 +714,9 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
             <div class="card-head"><h2>Roadmap Latihan</h2></div>
             <div class="card-body">
               <div class="timeline">
-                <div class="phase" data-phase="1"><div class="phase-title">Minggu 1–2 • Bodyweight</div><div class="phase-meta">Teknik, konsistensi, core, kaki, dada, bahu.</div></div>
-                <div class="phase" data-phase="2"><div class="phase-title">Minggu 3–5 • Dumbbell + Band</div><div class="phase-meta">Tambah resistance dan progressive overload.</div></div>
-                <div class="phase" data-phase="3"><div class="phase-title">Minggu 6+ • Gym</div><div class="phase-meta">Mesin/barbell ringan dengan teknik yang benar.</div></div>
+                <div class="phase" data-phase="1"><div class="phase-title">Bodyweight</div><div class="phase-meta">Teknik, konsistensi, core, kaki, dada, bahu.</div></div>
+                <div class="phase" data-phase="2"><div class="phase-title">Dumbbell + Band</div><div class="phase-meta">Tambah resistance dan progressive overload.</div></div>
+                <div class="phase" data-phase="3"><div class="phase-title">Gym</div><div class="phase-meta">Mesin/barbell ringan dengan teknik yang benar.</div></div>
               </div>
             </div>
           </section>
@@ -739,9 +802,89 @@ function applyAccent(name){
 applyAccent(localStorage.getItem(ACCENT_KEY)||"blue");
 
 const S=JSON.parse(localStorage.getItem("cgWorkoutState")||"{}");
-if(!S.phase)S.phase=1;if(S.day==null)S.day=(new Date().getDay()+6)%7;if(!S.session)S.session="morning";if(!S.done)S.done={};if(!S.exDone)S.exDone={};if(!S.duration)S.duration=25;
+if(!S.phase)S.phase=1;
+if(!S.programWeek)S.programWeek=S.phase===2?3:S.phase===3?6:1;
+if(S.day==null)S.day=0;
+if(!S.session)S.session="morning";
+if(!S.done)S.done={};
+if(!S.exDone)S.exDone={};
+if(!S.duration)S.duration=25;
 if(!S.guide)S.guide=null;
+if(!S.weekHistory)S.weekHistory=[];
+if(!S.dayDates)S.dayDates={};
+
+function weekForLegacyPhase(phase){return +phase===2?3:+phase===3?6:1}
+
+// Migrate progress from older versions to week-based keys once.
+if(!S.weekProgressVersion){
+  const migratedDone={};
+  Object.entries(S.done||{}).forEach(([k,v])=>{
+    let m=k.match(/^w(\d+)-(\d+)$/);
+    if(m){migratedDone[k]=v;return}
+    m=k.match(/^(\d+)-(\d+)$/);
+    if(m&&v)migratedDone[`w${weekForLegacyPhase(m[1])}-${m[2]}`]=true;
+  });
+  const migratedEx={};
+  Object.entries(S.exDone||{}).forEach(([k,v])=>{
+    let m=k.match(/^w(\d+)-(\d+)-(\d+)$/);
+    if(m){migratedEx[k]=v;return}
+    m=k.match(/^(\d+)-(\d+)-(\d+)$/);
+    if(m&&v)migratedEx[`w${weekForLegacyPhase(m[1])}-${m[2]}-${m[3]}`]=true;
+  });
+  S.done=migratedDone;
+  S.exDone=migratedEx;
+  S.weekProgressVersion=1;
+}
+
 const save=()=>localStorage.setItem("cgWorkoutState",JSON.stringify(S));
+
+function doneKey(day=S.day,week=S.programWeek){return `w${week}-${day}`}
+function exKeyFor(week,day,i){return `w${week}-${day}-${i}`}
+function weekDoneCount(week=S.programWeek){
+  let count=0;
+  for(let i=0;i<7;i++)if(S.done[doneKey(i,week)])count++;
+  return count;
+}
+function firstPendingDay(week=S.programWeek,start=0){
+  for(let i=start;i<7;i++)if(!S.done[doneKey(i,week)])return i;
+  for(let i=0;i<start;i++)if(!S.done[doneKey(i,week)])return i;
+  return null;
+}
+function todayISO(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function markProgramDayDone(day,week=S.programWeek){
+  S.done[doneKey(day,week)]=true;
+  S.dayDates[doneKey(day,week)]=todayISO();
+}
+function advanceToNextPendingDay(){
+  const next=firstPendingDay(S.programWeek,Math.min(6,S.day+1));
+  if(next!==null)S.day=next;
+}
+function archiveAndStartNextWeek(){
+  if(weekDoneCount()!==7)return;
+
+  const existing=S.weekHistory.find(x=>x.week===S.programWeek);
+  if(!existing){
+    S.weekHistory.unshift({
+      week:S.programWeek,
+      phase:+S.phase,
+      completedAt:todayISO(),
+      completed:7
+    });
+  }
+
+  S.programWeek++;
+  // Fase tidak berubah otomatis. User bebas tetap di program yang sama
+  // atau menggantinya manual dari Pengaturan Program.
+  S.day=0;
+  S.guide=null;
+  save();
+  stopGuideTimer();
+  hideGuide();
+  render();
+}
 
 function setCount(meta){
   const m=String(meta).match(/^\s*(\d+)\s*(?:set|×|x)/i);
@@ -773,20 +916,22 @@ function timedInfo(meta){
   };
 }
 function program(){return P[+S.phase][S.day]}
-function exKey(i){return `${S.phase}-${S.day}-${i}`}
+function exKey(i){return exKeyFor(S.programWeek,S.day,i)}
 
 function render(){
   const p=+S.phase,d=S.day,prog=program();
   $("todayTitle").textContent=prog[0];
   $("todayMeta").textContent=prog[1]+(S.session==="night"?" • backup malam":" • sesi pagi utama");
   $("dateChip").textContent=new Intl.DateTimeFormat("id-ID",{weekday:"long",day:"numeric",month:"short"}).format(new Date());
-  $("phaseChip").textContent="Fase "+p;
-  $("phaseBox").textContent=p===1?"Minggu 1–2 • Bodyweight • Fokus teknik & konsistensi.":p===2?"Minggu 3–5 • Dumbbell + resistance band • Mulai progressive overload.":"Minggu 6+ • Gym • Fokus teknik dan progres beban bertahap.";
+  const phaseName=p===1?"Bodyweight":p===2?"Dumbbell + Band":"Gym";
+  $("phaseChip").textContent=phaseName;
+  $("programWeekChip").textContent=`Minggu ${S.programWeek}`;
+  $("phaseBox").textContent=p===1?"Bodyweight • Fokus teknik & konsistensi.":p===2?"Dumbbell + resistance band • Mulai progressive overload.":"Gym • Fokus teknik dan progres beban bertahap.";
   document.querySelectorAll(".session").forEach(x=>x.classList.toggle("active",x.dataset.session===S.session));
   document.querySelectorAll(".phase").forEach(x=>x.classList.toggle("active",+x.dataset.phase===p));
   $("phaseSelect").value=p;$("durationSelect").value=S.duration;
 
-  let dc=0;for(let i=0;i<7;i++)if(S.done[`${p}-${i}`])dc++;
+  const dc=weekDoneCount();
   $("doneCount").textContent=`${dc}/7`;$("consistency").textContent=Math.round(dc/7*100)+"%";
   if($("dashDone")) $("dashDone").textContent=`${dc}/7`;
   if($("dashConsistency")) $("dashConsistency").textContent=Math.round(dc/7*100)+"%";
@@ -796,10 +941,26 @@ function render(){
     const hour=new Date().getHours();
     $("greetingTitle").textContent=hour<11?"Selamat Pagi":hour<15?"Selamat Siang":hour<18?"Selamat Sore":"Selamat Malam";
   }
-  $("weekStrip").innerHTML=DAYS.map((x,i)=>`<div class="day ${i===d?"active":""} ${S.done[`${p}-${i}`]?"completed":""}" data-day="${i}"><div class="d1">${x}</div><div class="d2">${i+1}</div></div>`).join("");
+  $("weekStrip").innerHTML=DAYS.map((x,i)=>`<div class="day ${i===d?"active":""} ${S.done[doneKey(i)]?"completed":""}" data-day="${i}"><div class="d1">Hari</div><div class="d2">${i+1}</div></div>`).join("");
   $("exerciseList").innerHTML=prog[2].map((e,i)=>`<div class="exercise ${S.exDone[exKey(i)]?"done":""}" data-ex="${i}"><button class="check">${S.exDone[exKey(i)]?"✓":""}</button><div><div class="ex-title">${e[0]}</div><div class="ex-meta">${e[1]} • rest ${e[2]} dtk</div></div><button class="btn secondary timer-btn" data-manual="${i}">Mulai</button></div>`).join("");
-  $("completeDay").textContent=S.done[`${p}-${d}`]?"Batalkan Selesai":"Tandai Hari Selesai";
-  $("resumeWorkout").style.display=S.guide&&S.guide.phase===p&&S.guide.day===d&&S.guide.status!=="finished"?"inline-block":"none";
+  $("completeDay").textContent=S.done[doneKey(d)]?"Batalkan Selesai":"Tandai Hari Selesai";
+  $("resumeWorkout").style.display=S.guide&&S.guide.week===S.programWeek&&S.guide.phase===p&&S.guide.day===d&&S.guide.status!=="finished"?"inline-block":"none";
+
+  const weekComplete=dc===7;
+  $("weekCompleteBanner").classList.toggle("show",weekComplete);
+  $("weekCompleteTitle").textContent=`Minggu ${S.programWeek} selesai 🎉`;
+  $("weekCompleteText").textContent=`Semua 7 Hari Program sudah selesai. Simpan progress lalu lanjut ke Minggu ${S.programWeek+1}.`;
+  $("nextWeekBtn").textContent=`Simpan & Lanjut Minggu ${S.programWeek+1}`;
+  $("nextWeekBtn").onclick=archiveAndStartNextWeek;
+
+  const pending=firstPendingDay();
+  $("weekProgressNote").textContent=weekComplete
+    ? `Minggu ${S.programWeek} sudah 7/7. Progress tidak akan hilang sampai kamu menekan tombol lanjut minggu berikutnya.`
+    : `Minggu Program ${S.programWeek} • Hari aktif ${d+1}/7${pending!==null&&pending!==d?` • Hari berikut yang belum selesai: ${pending+1}`:""}. Jika lembur, biarkan saja—besok program tetap di hari yang belum selesai.`;
+
+  $("weekHistory").innerHTML=S.weekHistory.length
+    ? S.weekHistory.slice(0,4).map(h=>`<div class="history-item"><strong>Minggu ${h.week} • ${h.phase===1?"Bodyweight":h.phase===2?"Dumbbell + Band":"Gym"}</strong><span>7/7 • ${new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"short",year:"numeric"}).format(new Date(h.completedAt+"T00:00:00"))}</span></div>`).join("")
+    : `<div class="history-empty">Belum ada minggu yang disimpan.</div>`;
 
   document.querySelectorAll(".day").forEach(x=>x.onclick=()=>{stopGuideTimer();S.day=+x.dataset.day;S.guide=null;save();render();hideGuide()});
   document.querySelectorAll(".exercise .check").forEach(x=>x.onclick=()=>{const i=+x.closest(".exercise").dataset.ex;S.exDone[exKey(i)]=!S.exDone[exKey(i)];save();render()});
@@ -809,7 +970,18 @@ function render(){
 document.querySelectorAll(".session").forEach(x=>x.onclick=()=>{S.session=x.dataset.session;save();render()});
 $("phaseSelect").onchange=e=>{stopGuideTimer();S.phase=+e.target.value;S.guide=null;save();render();hideGuide()};
 $("durationSelect").onchange=e=>{S.duration=+e.target.value;save();render()};
-$("completeDay").onclick=()=>{const k=`${S.phase}-${S.day}`;S.done[k]=!S.done[k];save();render()};
+$("completeDay").onclick=()=>{
+  const k=doneKey();
+  if(S.done[k]){
+    delete S.done[k];
+    delete S.dayDates[k];
+  }else{
+    markProgramDayDone(S.day);
+    advanceToNextPendingDay();
+  }
+  save();
+  render();
+};
 $("resetAll").onclick=()=>{if(confirm("Reset semua progress workout?")){const theme=localStorage.getItem(THEME_KEY),accent=localStorage.getItem(ACCENT_KEY);localStorage.removeItem("cgWorkoutState");if(theme)localStorage.setItem(THEME_KEY,theme);if(accent)localStorage.setItem(ACCENT_KEY,accent);location.reload()}};
 $("themeToggleTop").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
 const paletteToggle=$("paletteToggle"),palettePopover=$("palettePopover");
@@ -836,7 +1008,7 @@ let guideTimer=null;
 function stopGuideTimer(){if(guideTimer){clearInterval(guideTimer);guideTimer=null}}
 function guideStateFrom(startExercise=0){
   return {
-    phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",
+    week:S.programWeek,phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",
     remaining:0,restTotal:0,timedTotal:0,timedSide:1,paused:false
   };
 }
@@ -855,7 +1027,7 @@ function overallProgress(g){
 }
 function markCurrentExerciseDone(){
   if(!S.guide)return;
-  S.exDone[`${S.guide.phase}-${S.guide.day}-${S.guide.exercise}`]=true;
+  S.exDone[exKeyFor(S.guide.week,S.guide.day,S.guide.exercise)]=true;
 }
 function vibrate(){
   try{if(navigator.vibrate)navigator.vibrate([180,70,180])}catch(_){}
@@ -961,7 +1133,7 @@ function advanceAfterRest(){
   if(g.exercise<exs.length-1){
     g.exercise++;g.set=1;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
   }
-  g.status="finished";S.done[`${g.phase}-${g.day}`]=true;save();render();renderGuide();
+  g.status="finished";markProgramDayDone(g.day,g.week);save();render();renderGuide();
 }
 function skipRest(){stopGuideTimer();advanceAfterRest()}
 function skipExercise(){
@@ -985,17 +1157,42 @@ function renderGuide(){
   if(g.status==="finished"){
     $("guideProgress").style.width="100%";
     $("guideBody").innerHTML=`<div class="guide-done"><div class="big">✅</div><h3>Workout selesai</h3><p>Semua latihan hari ini sudah selesai. Progress hari otomatis ditandai selesai.</p><button class="btn success" id="finishGuideBtn">Tutup Workout Mode</button></div>`;
-    document.getElementById("finishGuideBtn").onclick=()=>{S.guide=null;save();hideGuide();render()};
+    document.getElementById("finishGuideBtn").onclick=()=>{
+      if(weekDoneCount()!==7)advanceToNextPendingDay();
+      S.guide=null;save();hideGuide();render();
+    };
     return;
   }
 
   const e=exs[g.exercise],sets=setCount(e[1]);
   const ti=timedInfo(e[1]);
 
-  // Ini inti revisinya:
-  // begitu "Mulai Timer" / workout mencapai gerakan berwaktu, countdown langsung berjalan.
+  // Latihan berwaktu masuk ke layar persiapan terlebih dahulu.
+  // Timer baru berjalan setelah pengguna menekan tombol Mulai.
   if(g.status==="exercise"&&ti){
-    startTimedSet(ti);
+    const readySide=ti.perSide ? ` • Sisi 1/2` : "";
+    $("guideBody").innerHTML=`<div class="rest-state">
+      <div class="guide-label">GERAKAN ${g.exercise+1} DARI ${exs.length} • SET ${g.set}/${sets}${readySide}</div>
+      <div class="guide-name">${e[0]}</div>
+      <div class="guide-reps">${e[1]}</div>
+
+      <div class="rest-ring" style="--pct:100%"><strong>${ti.duration}s</strong></div>
+      <div class="rest-time">${String(Math.floor(ti.duration/60)).padStart(2,"0")}:${String(ti.duration%60).padStart(2,"0")}</div>
+
+      ${ti.perSide?`<div class="timed-side">Mulai dari Sisi 1</div>`:""}
+      <div class="timer-ready-note">
+        <strong>Siapkan posisi terlebih dahulu.</strong><br>
+        Timer belum berjalan. Tekan <strong>Mulai</strong> ketika kamu sudah siap melakukan gerakan.
+      </div>
+
+      <div class="guide-actions">
+        <button class="btn success primary" id="startTimedBtn">▶ Mulai</button>
+        <button class="btn ghost" id="skipReadyTimedBtn">Lewati Gerakan</button>
+      </div>
+    </div>`;
+
+    $("startTimedBtn").onclick=()=>startTimedSet(ti);
+    $("skipReadyTimedBtn").onclick=skipExercise;
     return;
   }
 
@@ -1015,8 +1212,8 @@ function renderGuide(){
         ${g.paused
           ?"Timer dijeda."
           :ti&&ti.range
-            ?`Timer berjalan otomatis • target awal ${ti.duration} detik dari rentang ${ti.range} detik`
-            :"Timer berjalan otomatis • ikuti hitungan di layar"}
+            ?`Timer sedang berjalan • target ${ti.duration} detik dari rentang ${ti.range} detik`
+            :"Timer sedang berjalan • ikuti hitungan di layar"}
       </div>
 
       <div class="guide-actions">
@@ -1124,7 +1321,7 @@ if(mobileMenuToggle&&mobileMenu){
 }
 
 render();
-if(S.guide&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="finished"){
+if(S.guide&&S.guide.week===S.programWeek&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="finished"){
   $("resumeWorkout").style.display="inline-block";
   if(S.guide.status==="timed"&&!S.guide.paused) runTimedTimer();
 }
