@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
 <meta name="theme-color" content="#4db8ff">
-<title>Workout Assistant • Dashboard Rev5.2</title>
+<title>Workout Assistant • Dashboard Rev6.0</title>
 <meta name="description" content="Dashboard workout fleksibel dengan Guided Workout Mode, progress mingguan, dan mode terang/gelap.">
 <style>
 :root{
@@ -330,6 +330,9 @@ body[data-theme="dark"] .palette-icon-btn img{filter:invert(1)}
 .btn.secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--line)}
 .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
 .btn.success{background:var(--lime)}
+.btn.skip-action{background:#ef4444;color:#fff;border:1px solid #ef4444}
+.btn.complete-action{background:#22c55e;color:#fff;border:1px solid #22c55e}
+.btn.skip-action:disabled,.btn.complete-action:disabled{opacity:.38;cursor:not-allowed;filter:none}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{
   background:var(--surface-2);
@@ -389,6 +392,8 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 .week-complete.show{display:flex}
 .week-complete strong{display:block;font-size:14px}
 .week-complete span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.week-complete-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+button:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .week-progress-note{
   margin-top:10px;
   padding:10px 12px;
@@ -409,6 +414,17 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 .history-item strong{font-size:11px}
 .history-item span{font-size:10px;color:var(--muted);text-align:right}
 .history-empty{font-size:11px;color:var(--muted)}
+.training-calendar-card{margin-top:14px}
+.calendar-head{align-items:center}
+.calendar-subtitle{font-size:11px;color:var(--muted);margin-top:3px}
+.calendar-controls{display:flex;align-items:center;gap:9px}
+.calendar-controls strong{min-width:145px;text-align:center;font-size:13px}
+.calendar-nav-btn{width:38px;height:38px;padding:0;font-size:22px;display:grid;place-items:center}
+.calendar-legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--muted)}
+.calendar-legend span{display:flex;align-items:center;gap:6px}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}.legend-dot.done{background:#22c55e}.legend-dot.skipped{background:#ef4444}
+.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}.calendar-weekdays{margin-bottom:7px}.calendar-weekdays span{text-align:center;font-size:10px;color:var(--muted);font-weight:800}
+.calendar-day{min-height:74px;padding:9px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);position:relative;display:flex;flex-direction:column;justify-content:space-between}.calendar-day.empty{visibility:hidden}.calendar-day.today{box-shadow:inset 0 0 0 2px var(--lime)}.calendar-day.done{background:#22c55e;border-color:#22c55e;color:#fff}.calendar-day.skipped{background:#ef4444;border-color:#ef4444;color:#fff}.calendar-day .num{font-size:13px;font-weight:900}.calendar-day .state{font-size:9px;font-weight:800;opacity:.92;text-transform:uppercase;letter-spacing:.04em}.calendar-summary{margin-top:12px;padding:10px 12px;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:11px}
 .week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
 .day{
   padding:10px 5px;text-align:center;border-radius:14px;
@@ -418,7 +434,12 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
 .day .d2{font-weight:850;margin-top:3px}
 .day.active{background:var(--lime);color:#10120d;border-color:var(--lime)}
 .day.active .d1{color:#354019}
-.day.completed .d2::after{content:" ✓";color:#3d7215}
+.day.completed{background:#22c55e;border-color:#22c55e;color:#fff}
+.day.completed .d1{color:rgba(255,255,255,.78)}
+.day.completed .d2{color:#fff}
+.day.skipped{background:#ef4444;border-color:#ef4444;color:#fff}
+.day.skipped .d1{color:rgba(255,255,255,.82)}
+.day.skipped .d2{color:#fff;text-decoration:none}
 .exercise-list{display:grid;gap:9px}
 .exercise{
   display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;
@@ -508,7 +529,15 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
   .metric{padding:14px}.metric .value{font-size:23px}.metric .bubble{display:none}
   .session-choice,.settings{grid-template-columns:1fr}
   .week-strip{grid-template-columns:repeat(4,1fr)}
+  .calendar-head{align-items:flex-start;flex-direction:column}
+  .calendar-controls{width:100%;justify-content:space-between}
+  .calendar-controls strong{min-width:0}
+  .calendar-weekdays,.calendar-grid{gap:4px}
+  .calendar-day{min-height:58px;padding:7px;border-radius:11px}
+  .calendar-day .state{font-size:8px}
   .week-complete{align-items:stretch;flex-direction:column}
+  .week-complete-actions{justify-content:stretch}
+  .week-complete-actions .btn{flex:1}
   .week-head-actions{width:100%;justify-content:space-between}
   .exercise{grid-template-columns:auto 1fr}.exercise .timer-btn{grid-column:2}
   .guide-actions{grid-template-columns:1fr}.guide-actions .primary{grid-column:auto}
@@ -543,7 +572,10 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
         </svg>
       </a>
       <a href="#settings" title="Pengaturan" class="desktop-only" data-nav="settings">
-        <img class="settings-cycle-icon" src="data:image/png;base64,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" alt="" aria-hidden="true">
+        <img class="settings-cycle-icon" src="data:image/png;base64,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" alt="" aria-hidden="true">
+      </a>
+      <a href="#calendar" title="Kalender Latihan" class="desktop-only" data-nav="calendar">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v2.5M17 4v2.5M4.5 9h15M6 6h12a1.5 1.5 0 0 1 1.5 1.5V19A1.5 1.5 0 0 1 18 20.5H6A1.5 1.5 0 0 1 4.5 19V7.5A1.5 1.5 0 0 1 6 6Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
       </a>
     </nav>
 
@@ -573,8 +605,12 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
           <span>Roadmap</span>
         </a>
         <a href="#settings" data-mobile-link data-nav="settings">
-          <img class="settings-cycle-icon" src="data:image/png;base64,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" alt="" aria-hidden="true">
+          <img class="settings-cycle-icon" src="data:image/png;base64,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" alt="" aria-hidden="true">
           <span>Pengaturan</span>
+        </a>
+        <a href="#calendar" data-mobile-link data-nav="calendar">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v2.5M17 4v2.5M4.5 9h15M6 6h12a1.5 1.5 0 0 1 1.5 1.5V19A1.5 1.5 0 0 1 18 20.5H6A1.5 1.5 0 0 1 4.5 19V7.5A1.5 1.5 0 0 1 6 6Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <span>Kalender Latihan</span>
         </a>
       </div>
     </div>
@@ -653,7 +689,8 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
               <h2>Program Harian</h2>
               <div class="week-head-actions">
                 <span class="chip" id="programWeekChip">Minggu 1</span>
-                <button class="btn secondary" id="completeDay">Tandai Hari Selesai</button>
+                <button class="btn skip-action" id="skipDayBtn">Lewati</button>
+                <button class="btn complete-action" id="completeDay">Selesai</button>
               </div>
             </div>
             <div class="card-body">
@@ -663,7 +700,10 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
                   <strong id="weekCompleteTitle">Minggu selesai 🎉</strong>
                   <span id="weekCompleteText">Progress minggu ini siap disimpan.</span>
                 </div>
-                <button class="btn success" id="nextWeekBtn">Simpan & Lanjut Minggu Berikutnya</button>
+                <div class="week-complete-actions">
+                  <button class="btn ghost" id="cancelFinishWeekBtn" style="display:none">Batal</button>
+                  <button class="btn success" id="nextWeekBtn">Simpan & Lanjut Minggu Berikutnya</button>
+                </div>
               </div>
               <div style="height:14px"></div>
               <div class="exercise-list" id="exerciseList"></div>
@@ -690,7 +730,7 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
                 <div class="field"><label>Fase latihan</label><select id="phaseSelect"><option value="1">Bodyweight</option><option value="2">Dumbbell + Band</option><option value="3">Gym</option></select></div>
                 <div class="field"><label>Durasi target</label><select id="durationSelect"><option value="20">20 menit</option><option value="25">25 menit</option><option value="30">30 menit</option><option value="40">40 menit</option></select></div>
               </div>
-              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya otomatis. Fase program dipilih manual dan tidak berubah saat masuk minggu berikutnya. Jika lembur, besok tetap lanjut Hari Program yang belum selesai.</div>
+              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya. Untuk gerakan berwaktu, set berikutnya menunggu tombol Mulai. Jika ada halangan, gunakan Lewati. Setelah seluruh 7 hari dilalui, minggu 100% tersimpan otomatis; jika belum 100%, tombol Selesaikan baru muncul.</div>
             </div>
           </section>
 
@@ -721,6 +761,23 @@ body[data-theme="dark"] .field option{background:#171b21;color:#fff}
             </div>
           </section>
         </aside>
+      </section>
+
+      <section class="card nav-target training-calendar-card" id="calendar" data-panel="calendar">
+        <div class="card-head calendar-head">
+          <div><h2>Kalender Latihan</h2><div class="calendar-subtitle">Update realtime: selesai langsung hijau, dilewati langsung merah, tanpa reload.</div></div>
+          <div class="calendar-controls">
+            <button class="btn ghost calendar-nav-btn" id="calendarPrev" type="button" aria-label="Bulan sebelumnya">‹</button>
+            <strong id="calendarMonthLabel"></strong>
+            <button class="btn ghost calendar-nav-btn" id="calendarNext" type="button" aria-label="Bulan berikutnya">›</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="calendar-legend"><span><i class="legend-dot done"></i>Selesai</span><span><i class="legend-dot skipped"></i>Dilewati</span></div>
+          <div class="calendar-weekdays"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+          <div class="calendar-grid" id="trainingCalendar"></div>
+          <div class="calendar-summary" id="calendarSummary"></div>
+        </div>
       </section>
 
       <div class="footer">Workout Assistant • Guided Workout • Progress tersimpan otomatis</div>
@@ -812,6 +869,28 @@ if(!S.duration)S.duration=25;
 if(!S.guide)S.guide=null;
 if(!S.weekHistory)S.weekHistory=[];
 if(!S.dayDates)S.dayDates={};
+if(!S.skipped)S.skipped={};
+if(!S.calendarLog)S.calendarLog=[];
+
+// Selalu sinkronkan kalender dengan progress yang sudah tersimpan.
+// Jadi hari-hari yang sebelumnya sudah selesai / dilewati ikut tampil.
+function syncCalendarLogFromProgress(){
+  Object.entries(S.dayDates||{}).forEach(([key,date])=>{
+    const m=key.match(/^w(\d+)-(\d+)$/);
+    if(!m||!date)return;
+
+    const week=Number(m[1]);
+    const day=Number(m[2]);
+    const status=S.done[key]?"done":S.skipped[key]?"skipped":null;
+    if(!status)return;
+
+    const exists=S.calendarLog.some(e=>
+      e.week===week&&e.day===day&&e.date===date&&e.status===status
+    );
+    if(!exists)S.calendarLog.push({week,day,date,status});
+  });
+}
+syncCalendarLogFromProgress();
 
 function weekForLegacyPhase(phase){return +phase===2?3:+phase===3?6:1}
 
@@ -839,51 +918,99 @@ if(!S.weekProgressVersion){
 const save=()=>localStorage.setItem("cgWorkoutState",JSON.stringify(S));
 
 function doneKey(day=S.day,week=S.programWeek){return `w${week}-${day}`}
+function skipKey(day=S.day,week=S.programWeek){return `w${week}-${day}`}
 function exKeyFor(week,day,i){return `w${week}-${day}-${i}`}
+function allExercisesDoneFor(day=S.day,phase=+S.phase,week=S.programWeek){
+  const exercises=P[phase][day][2];
+  return exercises.length>0&&exercises.every((_,i)=>!!S.exDone[exKeyFor(week,day,i)]);
+}
+const MIN_WEEK_DAYS=5; // minimal 70% = 5/7 hari selesai
 function weekDoneCount(week=S.programWeek){
   let count=0;
   for(let i=0;i<7;i++)if(S.done[doneKey(i,week)])count++;
   return count;
 }
+function weekSkippedCount(week=S.programWeek){
+  let count=0;
+  for(let i=0;i<7;i++)if(S.skipped[skipKey(i,week)])count++;
+  return count;
+}
+function weekHandledCount(week=S.programWeek){
+  let count=0;
+  for(let i=0;i<7;i++)if(S.done[doneKey(i,week)]||S.skipped[skipKey(i,week)])count++;
+  return count;
+}
+function weekPercent(count=weekDoneCount()){return Math.round(count/7*100)}
 function firstPendingDay(week=S.programWeek,start=0){
-  for(let i=start;i<7;i++)if(!S.done[doneKey(i,week)])return i;
-  for(let i=0;i<start;i++)if(!S.done[doneKey(i,week)])return i;
+  for(let i=start;i<7;i++)if(!S.done[doneKey(i,week)]&&!S.skipped[skipKey(i,week)])return i;
+  for(let i=0;i<start;i++)if(!S.done[doneKey(i,week)]&&!S.skipped[skipKey(i,week)])return i;
   return null;
 }
 function todayISO(){
   const d=new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
+function refreshCalendarNow(){
+  if(typeof renderTrainingCalendar==="function"&&document.getElementById("trainingCalendar")){
+    renderTrainingCalendar();
+  }
+}
+function logCalendarEvent(day,week,status,date=todayISO()){
+  // Hanya satu status untuk Hari Program yang sama.
+  S.calendarLog=S.calendarLog.filter(e=>!(e.week===week&&e.day===day));
+  S.calendarLog.push({week,day,status,date});
+  refreshCalendarNow();
+}
+function removeCalendarEvent(day,week,status){
+  S.calendarLog=S.calendarLog.filter(e=>!(e.week===week&&e.day===day&&e.status===status));
+  refreshCalendarNow();
+}
 function markProgramDayDone(day,week=S.programWeek){
-  S.done[doneKey(day,week)]=true;
-  S.dayDates[doneKey(day,week)]=todayISO();
+  const k=doneKey(day,week);
+  delete S.skipped[skipKey(day,week)];
+  S.done[k]=true;
+  S.dayDates[k]=todayISO();
+  logCalendarEvent(day,week,"done");
+  save();
+  refreshCalendarNow();
+}
+function markProgramDaySkipped(day,week=S.programWeek){
+  const k=skipKey(day,week);
+  delete S.done[doneKey(day,week)];
+  S.skipped[k]=true;
+  S.dayDates[k]=todayISO();
+  logCalendarEvent(day,week,"skipped");
+  save();
+  refreshCalendarNow();
 }
 function advanceToNextPendingDay(){
   const next=firstPendingDay(S.programWeek,Math.min(6,S.day+1));
   if(next!==null)S.day=next;
 }
 function archiveAndStartNextWeek(){
-  if(weekDoneCount()!==7)return;
+  const completed=weekDoneCount();
+  if(completed<MIN_WEEK_DAYS)return;
 
   const existing=S.weekHistory.find(x=>x.week===S.programWeek);
   if(!existing){
-    S.weekHistory.unshift({
-      week:S.programWeek,
-      phase:+S.phase,
-      completedAt:todayISO(),
-      completed:7
-    });
+    S.weekHistory.unshift({week:S.programWeek,phase:+S.phase,completedAt:todayISO(),completed,percent:weekPercent(completed)});
   }
 
   S.programWeek++;
-  // Fase tidak berubah otomatis. User bebas tetap di program yang sama
-  // atau menggantinya manual dari Pengaturan Program.
   S.day=0;
   S.guide=null;
   save();
   stopGuideTimer();
   hideGuide();
   render();
+}
+
+function maybeAutoFinishPerfectWeek(){
+  if(weekHandledCount()===7&&weekDoneCount()===7){
+    archiveAndStartNextWeek();
+    return true;
+  }
+  return false;
 }
 
 function setCount(meta){
@@ -918,6 +1045,18 @@ function timedInfo(meta){
 function program(){return P[+S.phase][S.day]}
 function exKey(i){return exKeyFor(S.programWeek,S.day,i)}
 
+let calendarCursor=new Date(); calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
+function calendarDateStatus(dateStr){const events=S.calendarLog.filter(e=>e.date===dateStr);if(events.some(e=>e.status==="done"))return "done";if(events.some(e=>e.status==="skipped"))return "skipped";return "";}
+function renderTrainingCalendar(){
+  syncCalendarLogFromProgress();
+  const grid=$("trainingCalendar"); if(!grid)return;
+  const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth(),first=new Date(y,m,1),lastDay=new Date(y,m+1,0).getDate(),offset=(first.getDay()+6)%7;
+  const monthName=new Intl.DateTimeFormat("id-ID",{month:"long",year:"numeric"}).format(first); $("calendarMonthLabel").textContent=monthName.charAt(0).toUpperCase()+monthName.slice(1);
+  const cells=[]; for(let i=0;i<offset;i++)cells.push(`<div class="calendar-day empty"></div>`); let md=0,ms=0; const today=todayISO();
+  for(let day=1;day<=lastDay;day++){const dateStr=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;const status=calendarDateStatus(dateStr);if(status==="done")md++;if(status==="skipped")ms++;const label=status==="done"?"Selesai":status==="skipped"?"Dilewati":"";cells.push(`<div class="calendar-day ${status} ${dateStr===today?"today":""}"><span class="num">${day}</span><span class="state">${label}</span></div>`);}
+  grid.innerHTML=cells.join(""); $("calendarSummary").textContent=`${monthName}: ${md} hari selesai • ${ms} hari dilewati.`;
+}
+
 function render(){
   const p=+S.phase,d=S.day,prog=program();
   $("todayTitle").textContent=prog[0];
@@ -941,27 +1080,51 @@ function render(){
     const hour=new Date().getHours();
     $("greetingTitle").textContent=hour<11?"Selamat Pagi":hour<15?"Selamat Siang":hour<18?"Selamat Sore":"Selamat Malam";
   }
-  $("weekStrip").innerHTML=DAYS.map((x,i)=>`<div class="day ${i===d?"active":""} ${S.done[doneKey(i)]?"completed":""}" data-day="${i}"><div class="d1">Hari</div><div class="d2">${i+1}</div></div>`).join("");
+  $("weekStrip").innerHTML=DAYS.map((x,i)=>{
+    const done=S.done[doneKey(i)],skipped=S.skipped[skipKey(i)];
+    const state=done?"completed":skipped?"skipped":"";
+    return `<div class="day ${i===d?"active":""} ${state}" data-day="${i}"><div class="d1">Hari</div><div class="d2">${i+1}</div></div>`;
+  }).join("");
   $("exerciseList").innerHTML=prog[2].map((e,i)=>`<div class="exercise ${S.exDone[exKey(i)]?"done":""}" data-ex="${i}"><button class="check">${S.exDone[exKey(i)]?"✓":""}</button><div><div class="ex-title">${e[0]}</div><div class="ex-meta">${e[1]} • rest ${e[2]} dtk</div></div><button class="btn secondary timer-btn" data-manual="${i}">Mulai</button></div>`).join("");
-  $("completeDay").textContent=S.done[doneKey(d)]?"Batalkan Selesai":"Tandai Hari Selesai";
+  $("completeDay").textContent="Selesai";
+  $("skipDayBtn").textContent="Lewati";
+  const allExercisesChecked=allExercisesDoneFor(d,p,S.programWeek);
+  $("completeDay").disabled=!!S.done[doneKey(d)]||!allExercisesChecked;
+  $("completeDay").title=S.done[doneKey(d)]?"Hari ini sudah selesai":allExercisesChecked?"Semua latihan sudah dicentang":"Centang semua latihan terlebih dahulu";
+  $("skipDayBtn").disabled=!!S.done[doneKey(d)];
   $("resumeWorkout").style.display=S.guide&&S.guide.week===S.programWeek&&S.guide.phase===p&&S.guide.day===d&&S.guide.status!=="finished"?"inline-block":"none";
 
-  const weekComplete=dc===7;
-  $("weekCompleteBanner").classList.toggle("show",weekComplete);
-  $("weekCompleteTitle").textContent=`Minggu ${S.programWeek} selesai 🎉`;
-  $("weekCompleteText").textContent=`Semua 7 Hari Program sudah selesai. Simpan progress lalu lanjut ke Minggu ${S.programWeek+1}.`;
-  $("nextWeekBtn").textContent=`Simpan & Lanjut Minggu ${S.programWeek+1}`;
-  $("nextWeekBtn").onclick=archiveAndStartNextWeek;
+  const handled=weekHandledCount();
+  const skippedCount=weekSkippedCount();
+  const weekNeedsFinish=handled===7&&dc<7;
+  $("weekCompleteBanner").classList.toggle("show",weekNeedsFinish);
+  $("cancelFinishWeekBtn").style.display="none";
+  $("nextWeekBtn").disabled=false;
+
+  if(weekNeedsFinish){
+    $("weekCompleteTitle").textContent=`Minggu ${S.programWeek} belum 100%`;
+    $("weekCompleteText").textContent=dc>=MIN_WEEK_DAYS
+      ? `Progress ${dc}/7 (${weekPercent(dc)}%) • ${skippedCount} hari terlewat. Tekan Selesaikan untuk menyimpan riwayat dan lanjut minggu berikutnya.`
+      : `Progress ${dc}/7 (${weekPercent(dc)}%). Minimal 5/7 hari selesai diperlukan untuk melanjutkan minggu berikutnya.`;
+    $("nextWeekBtn").textContent=`Selesaikan & Lanjut Minggu ${S.programWeek+1}`;
+    $("nextWeekBtn").disabled=dc<MIN_WEEK_DAYS;
+    $("nextWeekBtn").onclick=archiveAndStartNextWeek;
+  }
 
   const pending=firstPendingDay();
-  $("weekProgressNote").textContent=weekComplete
-    ? `Minggu ${S.programWeek} sudah 7/7. Progress tidak akan hilang sampai kamu menekan tombol lanjut minggu berikutnya.`
-    : `Minggu Program ${S.programWeek} • Hari aktif ${d+1}/7${pending!==null&&pending!==d?` • Hari berikut yang belum selesai: ${pending+1}`:""}. Jika lembur, biarkan saja—besok program tetap di hari yang belum selesai.`;
+  $("weekProgressNote").textContent=weekNeedsFinish
+    ? (dc>=MIN_WEEK_DAYS?`Semua 7 Hari Program sudah dilalui. Minggu ini ${dc}/7 (${weekPercent(dc)}%) dan siap diselesaikan.`:`Semua 7 Hari Program sudah dilalui, tetapi progress baru ${dc}/7 (${weekPercent(dc)}%). Selesaikan minimal 5 hari untuk dapat lanjut.`)
+    : `Minggu Program ${S.programWeek} • Selesai ${dc}/7 (${weekPercent(dc)}%)${skippedCount?` • Terlewat ${skippedCount}`:""}${pending!==null?` • Berikutnya Hari ${pending+1}`:""}.`;
 
   $("weekHistory").innerHTML=S.weekHistory.length
-    ? S.weekHistory.slice(0,4).map(h=>`<div class="history-item"><strong>Minggu ${h.week} • ${h.phase===1?"Bodyweight":h.phase===2?"Dumbbell + Band":"Gym"}</strong><span>7/7 • ${new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"short",year:"numeric"}).format(new Date(h.completedAt+"T00:00:00"))}</span></div>`).join("")
+    ? S.weekHistory.slice(0,4).map(h=>{
+        const completed=h.completed??7;
+        const pct=h.percent??Math.round(completed/7*100);
+        return `<div class="history-item"><strong>Minggu ${h.week} • ${h.phase===1?"Bodyweight":h.phase===2?"Dumbbell + Band":"Gym"}</strong><span>${completed}/7 • ${pct}% • ${new Intl.DateTimeFormat("id-ID",{day:"numeric",month:"short",year:"numeric"}).format(new Date(h.completedAt+"T00:00:00"))}</span></div>`;
+      }).join("")
     : `<div class="history-empty">Belum ada minggu yang disimpan.</div>`;
 
+  renderTrainingCalendar();
   document.querySelectorAll(".day").forEach(x=>x.onclick=()=>{stopGuideTimer();S.day=+x.dataset.day;S.guide=null;save();render();hideGuide()});
   document.querySelectorAll(".exercise .check").forEach(x=>x.onclick=()=>{const i=+x.closest(".exercise").dataset.ex;S.exDone[exKey(i)]=!S.exDone[exKey(i)];save();render()});
   document.querySelectorAll("[data-manual]").forEach(x=>x.onclick=()=>startGuide(+x.dataset.manual));
@@ -971,16 +1134,23 @@ document.querySelectorAll(".session").forEach(x=>x.onclick=()=>{S.session=x.data
 $("phaseSelect").onchange=e=>{stopGuideTimer();S.phase=+e.target.value;S.guide=null;save();render();hideGuide()};
 $("durationSelect").onchange=e=>{S.duration=+e.target.value;save();render()};
 $("completeDay").onclick=()=>{
-  const k=doneKey();
-  if(S.done[k]){
-    delete S.done[k];
-    delete S.dayDates[k];
-  }else{
-    markProgramDayDone(S.day);
-    advanceToNextPendingDay();
-  }
+  const currentDay=S.day;
+  const k=doneKey(currentDay);
+  if(S.done[k])return;
+  if(!allExercisesDoneFor(currentDay,+S.phase,S.programWeek))return;
+
+  markProgramDayDone(currentDay);
   save();
-  render();
+  if(maybeAutoFinishPerfectWeek())return;
+  advanceToNextPendingDay();
+  save();render();
+};
+
+$("skipDayBtn").onclick=()=>{
+  const currentDay=S.day; const k=skipKey(currentDay);
+  if(S.done[doneKey(currentDay)])return;
+  if(S.skipped[k]){delete S.skipped[k];delete S.dayDates[k];removeCalendarEvent(currentDay,S.programWeek,"skipped");save();render();return;}
+  stopGuideTimer(); S.guide=null; markProgramDaySkipped(currentDay); save(); advanceToNextPendingDay(); save(); hideGuide(); render();
 };
 $("resetAll").onclick=()=>{if(confirm("Reset semua progress workout?")){const theme=localStorage.getItem(THEME_KEY),accent=localStorage.getItem(ACCENT_KEY);localStorage.removeItem("cgWorkoutState");if(theme)localStorage.setItem(THEME_KEY,theme);if(accent)localStorage.setItem(ACCENT_KEY,accent);location.reload()}};
 $("themeToggleTop").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
@@ -1009,7 +1179,7 @@ function stopGuideTimer(){if(guideTimer){clearInterval(guideTimer);guideTimer=nu
 function guideStateFrom(startExercise=0){
   return {
     week:S.programWeek,phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",
-    remaining:0,restTotal:0,timedTotal:0,timedSide:1,paused:false
+    remaining:0,restTotal:0,timedTotal:0,timedSide:1,pendingSet:0,paused:false
   };
 }
 function startGuide(startExercise=0){stopGuideTimer();S.guide=guideStateFrom(startExercise);save();showGuide();renderGuide()}
@@ -1128,12 +1298,23 @@ function advanceAfterRest(){
   const g=S.guide;if(!g)return;
   const exs=P[g.phase][g.day][2],e=exs[g.exercise],totalSets=setCount(e[1]);
   if(g.set<totalSets){
+    const ti=timedInfo(e[1]);
+    if(ti){
+      g.pendingSet=g.set+1;
+      g.status="set-ready";
+      g.remaining=0;
+      g.timedSide=1;
+      g.paused=false;
+      save();render();renderGuide();return;
+    }
     g.set++;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
   }
   if(g.exercise<exs.length-1){
-    g.exercise++;g.set=1;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
+    g.exercise++;g.set=1;g.pendingSet=0;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;save();render();renderGuide();return;
   }
-  g.status="finished";markProgramDayDone(g.day,g.week);save();render();renderGuide();
+  g.status="finished";
+  if(allExercisesDoneFor(g.day,g.phase,g.week))markProgramDayDone(g.day,g.week);
+  save();render();renderGuide();
 }
 function skipRest(){stopGuideTimer();advanceAfterRest()}
 function skipExercise(){
@@ -1141,7 +1322,7 @@ function skipExercise(){
   stopGuideTimer();
   const exs=P[g.phase][g.day][2];
   if(g.exercise<exs.length-1){
-    g.exercise++;g.set=1;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;
+    g.exercise++;g.set=1;g.pendingSet=0;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;
     save();render();renderGuide();
   }else{
     g.status="finished";save();renderGuide();
@@ -1155,17 +1336,62 @@ function renderGuide(){
   $("guideModeLabel").textContent=`${P[g.phase][g.day][0]} • ${g.exercise+1}/${exs.length}`;
 
   if(g.status==="finished"){
-    $("guideProgress").style.width="100%";
-    $("guideBody").innerHTML=`<div class="guide-done"><div class="big">✅</div><h3>Workout selesai</h3><p>Semua latihan hari ini sudah selesai. Progress hari otomatis ditandai selesai.</p><button class="btn success" id="finishGuideBtn">Tutup Workout Mode</button></div>`;
+    const complete=allExercisesDoneFor(g.day,g.phase,g.week);
+    $("guideProgress").style.width=complete?"100%":Math.min(99,overallProgress(g))+"%";
+    $("guideBody").innerHTML=complete
+      ? `<div class="guide-done"><div class="big">✅</div><h3>Workout selesai</h3><p>Semua latihan hari ini sudah selesai. Progress hari otomatis ditandai selesai.</p><button class="btn success" id="finishGuideBtn">Tutup Workout Mode</button></div>`
+      : `<div class="guide-done"><div class="big">⚠️</div><h3>Workout belum lengkap</h3><p>Masih ada latihan yang belum selesai. Hari ini belum ditandai selesai.</p><button class="btn secondary" id="finishGuideBtn">Kembali ke Program</button></div>`;
+
     document.getElementById("finishGuideBtn").onclick=()=>{
-      if(weekDoneCount()!==7)advanceToNextPendingDay();
-      S.guide=null;save();hideGuide();render();
+      S.guide=null;
+      save();
+
+      if(complete){
+        if(maybeAutoFinishPerfectWeek())return;
+        advanceToNextPendingDay();
+        save();
+      }
+
+      hideGuide();
+      render();
     };
     return;
   }
 
   const e=exs[g.exercise],sets=setCount(e[1]);
   const ti=timedInfo(e[1]);
+
+  // Setelah istirahat latihan berwaktu, set berikutnya menunggu konfirmasi Mulai.
+  if(g.status==="set-ready"&&ti){
+    const nextSet=g.pendingSet||Math.min(sets,g.set+1);
+    $("guideBody").innerHTML=`<div class="rest-state">
+      <div class="guide-label">ISTIRAHAT SELESAI</div>
+      <div class="guide-name">${e[0]}</div>
+      <div class="guide-reps">Set ${nextSet} dari ${sets} siap dimulai</div>
+
+      <div class="rest-ring" style="--pct:100%"><strong>${ti.duration}s</strong></div>
+      <div class="rest-time">${String(Math.floor(ti.duration/60)).padStart(2,"0")}:${String(ti.duration%60).padStart(2,"0")}</div>
+
+      <div class="timer-ready-note">
+        <strong>Atur posisi dan siapkan napas.</strong><br>
+        Set ${nextSet} belum berjalan. Tekan Mulai Set ${nextSet} kalau sudah siap.
+      </div>
+
+      <div class="guide-actions">
+        <button class="btn success primary" id="startNextTimedSetBtn">▶ Mulai Set ${nextSet}</button>
+        <button class="btn ghost" id="skipNextTimedSetBtn">Lewati Gerakan</button>
+      </div>
+    </div>`;
+
+    $("startNextTimedSetBtn").onclick=()=>{
+      g.set=nextSet;
+      g.pendingSet=0;
+      save();
+      startTimedSet(ti);
+    };
+    $("skipNextTimedSetBtn").onclick=skipExercise;
+    return;
+  }
 
   // Latihan berwaktu masuk ke layar persiapan terlebih dahulu.
   // Timer baru berjalan setelah pengguna menekan tombol Mulai.
@@ -1268,8 +1494,11 @@ function renderGuide(){
   $("manualRestBtn").onclick=()=>startRest(e[2]);
 }
 
+$("calendarPrev").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()-1,1);renderTrainingCalendar();};
+$("calendarNext").onclick=()=>{calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth()+1,1);renderTrainingCalendar();};
+
 function selectNavigation(name,{scroll=true}={}){
-  const safe=["dashboard","program","roadmap","settings"].includes(name)?name:"dashboard";
+  const safe=["dashboard","program","roadmap","settings","calendar"].includes(name)?name:"dashboard";
 
   document.querySelectorAll(".nav [data-nav]").forEach(link=>{
     link.classList.toggle("active",link.dataset.nav===safe);
@@ -1296,7 +1525,7 @@ document.querySelectorAll("[data-nav]").forEach(link=>{
   });
 });
 
-const initialNav=location.hash==="#program"?"program":location.hash==="#roadmap"?"roadmap":location.hash==="#settings"?"settings":"dashboard";
+const initialNav=location.hash==="#program"?"program":location.hash==="#roadmap"?"roadmap":location.hash==="#settings"?"settings":location.hash==="#calendar"?"calendar":"dashboard";
 selectNavigation(initialNav,{scroll:false});
 
 const mobileMenuToggle=$("mobileMenuToggle"),mobileMenu=$("mobileMenu");
