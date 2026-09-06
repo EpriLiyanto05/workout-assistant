@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Workout">
 <meta name="theme-color" content="#4db8ff">
-<title>Workout Assistant • Dashboard Rev6.0</title>
+<title>Workout Assistant • Dashboard Rev6.2</title>
 <meta name="description" content="Dashboard workout fleksibel dengan Guided Workout Mode, progress mingguan, dan mode terang/gelap.">
 <style>
 :root{
@@ -431,7 +431,7 @@ button:disabled{opacity:.45;cursor:not-allowed;filter:none}
   border:1px solid var(--line);background:var(--surface-2);cursor:pointer
 }
 .day .d1{font-size:11px;color:var(--muted)}
-.day .d2{font-weight:850;margin-top:3px}
+.day .d2{font-weight:850;margin-top:0;font-size:12px}
 .day.active{background:var(--lime);color:#10120d;border-color:var(--lime)}
 .day.active .d1{color:#354019}
 .day.completed{background:#22c55e;border-color:#22c55e;color:#fff}
@@ -730,7 +730,7 @@ button:disabled{opacity:.45;cursor:not-allowed;filter:none}
                 <div class="field"><label>Fase latihan</label><select id="phaseSelect"><option value="1">Bodyweight</option><option value="2">Dumbbell + Band</option><option value="3">Gym</option></select></div>
                 <div class="field"><label>Durasi target</label><select id="durationSelect"><option value="20">20 menit</option><option value="25">25 menit</option><option value="30">30 menit</option><option value="40">40 menit</option></select></div>
               </div>
-              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya. Untuk gerakan berwaktu, set berikutnya menunggu tombol Mulai. Jika ada halangan, gunakan Lewati. Setelah seluruh 7 hari dilalui, minggu 100% tersimpan otomatis; jika belum 100%, tombol Selesaikan baru muncul.</div>
+              <div class="notice">Workout Mode memandu set → istirahat → set berikutnya. Untuk gerakan berwaktu, set berikutnya menunggu tombol Mulai. Jika ada halangan, gunakan Lewati. Program hari tersebut akan bergeser ke hari berikutnya sampai Minggu; setiap Senin jadwal kembali dari awal. Setelah seluruh 7 hari dilalui, minggu 100% tersimpan otomatis; jika belum 100%, tombol Selesaikan baru muncul.</div>
             </div>
           </section>
 
@@ -765,7 +765,7 @@ button:disabled{opacity:.45;cursor:not-allowed;filter:none}
 
       <section class="card nav-target training-calendar-card" id="calendar" data-panel="calendar">
         <div class="card-head calendar-head">
-          <div><h2>Kalender Latihan</h2><div class="calendar-subtitle">Update realtime: selesai langsung hijau, dilewati langsung merah, tanpa reload.</div></div>
+          <div><h2>Kalender Latihan</h2><div class="calendar-subtitle">Update realtime berdasarkan Senin–Minggu: selesai langsung hijau, dilewati langsung merah.</div></div>
           <div class="calendar-controls">
             <button class="btn ghost calendar-nav-btn" id="calendarPrev" type="button" aria-label="Bulan sebelumnya">‹</button>
             <strong id="calendarMonthLabel"></strong>
@@ -788,7 +788,7 @@ button:disabled{opacity:.45;cursor:not-allowed;filter:none}
 <script>
 
 (() => {
-const DAYS=["Sen","Sel","Rab","Kam","Jum","Sab","Min"];
+const DAYS=["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu","Minggu"];
 const P={
 1:[
 ["Lower Body Dasar","Kaki + glutes • ±25 menit",[["Bodyweight Squat","3 set × 10–12",45],["Reverse Lunge","3 set × 8/sisi",45],["Glute Bridge","3 set × 12–15",45],["Calf Raise","3 set × 15–20",30],["Wall Sit","2 set × 30–45 dtk",45]]],
@@ -871,19 +871,63 @@ if(!S.weekHistory)S.weekHistory=[];
 if(!S.dayDates)S.dayDates={};
 if(!S.skipped)S.skipped={};
 if(!S.calendarLog)S.calendarLog=[];
+if(!S.weekStarts)S.weekStarts={};
+
+function isoFromDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function mondayOf(date=new Date()){
+  const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  const offset=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-offset);
+  return d;
+}
+function parseISODate(iso){
+  const [y,m,d]=String(iso).split("-").map(Number);
+  return new Date(y,m-1,d);
+}
+function addDaysISO(iso,days){
+  const d=parseISODate(iso);
+  d.setDate(d.getDate()+days);
+  return isoFromDate(d);
+}
+function ensureWeekStart(week=S.programWeek){
+  if(S.weekStarts[week])return S.weekStarts[week];
+
+  // Minggu aktif mengikuti Senin pada minggu kalender saat ini.
+  if(week===S.programWeek){
+    S.weekStarts[week]=isoFromDate(mondayOf(new Date()));
+    return S.weekStarts[week];
+  }
+
+  // Untuk minggu lama/berikutnya, turunkan dari anchor minggu aktif.
+  const activeStart=S.weekStarts[S.programWeek]||isoFromDate(mondayOf(new Date()));
+  S.weekStarts[S.programWeek]=activeStart;
+  S.weekStarts[week]=addDaysISO(activeStart,(week-S.programWeek)*7);
+  return S.weekStarts[week];
+}
+function scheduledDateFor(day,week=S.programWeek){
+  return addDaysISO(ensureWeekStart(week),day);
+}
 
 // Selalu sinkronkan kalender dengan progress yang sudah tersimpan.
-// Jadi hari-hari yang sebelumnya sudah selesai / dilewati ikut tampil.
+// Jika status lama belum punya tanggal, tanggal diinfer dari Senin–Minggu minggu program.
 function syncCalendarLogFromProgress(){
-  Object.entries(S.dayDates||{}).forEach(([key,date])=>{
+  const keys=new Set([...Object.keys(S.done||{}),...Object.keys(S.skipped||{})]);
+  keys.forEach(key=>{
     const m=key.match(/^w(\d+)-(\d+)$/);
-    if(!m||!date)return;
+    if(!m)return;
 
     const week=Number(m[1]);
     const day=Number(m[2]);
     const status=S.done[key]?"done":S.skipped[key]?"skipped":null;
     if(!status)return;
 
+    const date=S.dayDates[key]||scheduledDateFor(day,week);
+    if(!S.dayDates[key])S.dayDates[key]=date;
+
+    // Pastikan hanya satu status untuk Hari Program yang sama.
+    S.calendarLog=S.calendarLog.filter(e=>!(e.week===week&&e.day===day&&e.status!==status));
     const exists=S.calendarLog.some(e=>
       e.week===week&&e.day===day&&e.date===date&&e.status===status
     );
@@ -891,6 +935,7 @@ function syncCalendarLogFromProgress(){
   });
 }
 syncCalendarLogFromProgress();
+localStorage.setItem("cgWorkoutState",JSON.stringify(S));
 
 function weekForLegacyPhase(phase){return +phase===2?3:+phase===3?6:1}
 
@@ -920,8 +965,22 @@ const save=()=>localStorage.setItem("cgWorkoutState",JSON.stringify(S));
 function doneKey(day=S.day,week=S.programWeek){return `w${week}-${day}`}
 function skipKey(day=S.day,week=S.programWeek){return `w${week}-${day}`}
 function exKeyFor(week,day,i){return `w${week}-${day}-${i}`}
+
+// Jika ada hari yang dilewati, program setelahnya bergeser satu hari ke depan.
+// Contoh: Senin dilewati -> Selasa menjalankan Program Senin,
+// Rabu menjalankan Program Selasa, dan seterusnya sampai Minggu.
+// Pergeseran tidak pernah dibawa ke minggu berikutnya.
+function programDayFor(calendarDay=S.day,week=S.programWeek){
+  let skippedBefore=0;
+  for(let i=0;i<calendarDay;i++){
+    if(S.skipped[skipKey(i,week)])skippedBefore++;
+  }
+  return Math.max(0,Math.min(6,calendarDay-skippedBefore));
+}
+
 function allExercisesDoneFor(day=S.day,phase=+S.phase,week=S.programWeek){
-  const exercises=P[phase][day][2];
+  const programDay=programDayFor(day,week);
+  const exercises=P[phase][programDay][2];
   return exercises.length>0&&exercises.every((_,i)=>!!S.exDone[exKeyFor(week,day,i)]);
 }
 const MIN_WEEK_DAYS=5; // minimal 70% = 5/7 hari selesai
@@ -969,8 +1028,9 @@ function markProgramDayDone(day,week=S.programWeek){
   const k=doneKey(day,week);
   delete S.skipped[skipKey(day,week)];
   S.done[k]=true;
-  S.dayDates[k]=todayISO();
-  logCalendarEvent(day,week,"done");
+  const scheduledDate=scheduledDateFor(day,week);
+  S.dayDates[k]=scheduledDate;
+  logCalendarEvent(day,week,"done",scheduledDate);
   save();
   refreshCalendarNow();
 }
@@ -978,8 +1038,9 @@ function markProgramDaySkipped(day,week=S.programWeek){
   const k=skipKey(day,week);
   delete S.done[doneKey(day,week)];
   S.skipped[k]=true;
-  S.dayDates[k]=todayISO();
-  logCalendarEvent(day,week,"skipped");
+  const scheduledDate=scheduledDateFor(day,week);
+  S.dayDates[k]=scheduledDate;
+  logCalendarEvent(day,week,"skipped",scheduledDate);
   save();
   refreshCalendarNow();
 }
@@ -996,7 +1057,16 @@ function archiveAndStartNextWeek(){
     S.weekHistory.unshift({week:S.programWeek,phase:+S.phase,completedAt:todayISO(),completed,percent:weekPercent(completed)});
   }
 
+  const previousWeek=S.programWeek;
+  const previousStart=ensureWeekStart(previousWeek);
   S.programWeek++;
+
+  // Minggu berikutnya minimal maju 7 hari, tetapi jika kalender nyata sudah lebih maju,
+  // gunakan Senin minggu kalender saat ini.
+  const sequentialStart=parseISODate(addDaysISO(previousStart,7));
+  const actualMonday=mondayOf(new Date());
+  S.weekStarts[S.programWeek]=isoFromDate(actualMonday>sequentialStart?actualMonday:sequentialStart);
+
   S.day=0;
   S.guide=null;
   save();
@@ -1011,6 +1081,39 @@ function maybeAutoFinishPerfectWeek(){
     return true;
   }
   return false;
+}
+
+function rolloverCalendarWeekIfNeeded(){
+  const currentMondayISO=isoFromDate(mondayOf(new Date()));
+  const activeStartISO=ensureWeekStart(S.programWeek);
+
+  const currentMonday=parseISODate(currentMondayISO);
+  const activeStart=parseISODate(activeStartISO);
+  if(currentMonday<=activeStart)return;
+
+  const diffWeeks=Math.max(1,Math.round((currentMonday-activeStart)/(7*24*60*60*1000)));
+  const completed=weekDoneCount();
+  const handled=weekHandledCount();
+
+  // Simpan minggu kalender sebelumnya ke riwayat bila memang ada aktivitas.
+  if(handled>0&&!S.weekHistory.some(x=>x.week===S.programWeek)){
+    S.weekHistory.unshift({
+      week:S.programWeek,
+      phase:+S.phase,
+      completedAt:addDaysISO(activeStartISO,6),
+      completed,
+      percent:weekPercent(completed)
+    });
+  }
+
+  S.programWeek+=diffWeeks;
+  S.weekStarts[S.programWeek]=currentMondayISO;
+
+  // Senin selalu mulai lagi dari Program Senin.
+  // Jika aplikasi baru dibuka di tengah minggu baru, fokuskan ke hari kalender saat ini.
+  S.day=(new Date().getDay()+6)%7;
+  S.guide=null;
+  save();
 }
 
 function setCount(meta){
@@ -1042,7 +1145,7 @@ function timedInfo(meta){
     perSide:/\/\s*sisi|per\s+sisi/i.test(s)
   };
 }
-function program(){return P[+S.phase][S.day]}
+function program(){return P[+S.phase][programDayFor(S.day,S.programWeek)]}
 function exKey(i){return exKeyFor(S.programWeek,S.day,i)}
 
 let calendarCursor=new Date(); calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),1);
@@ -1058,9 +1161,10 @@ function renderTrainingCalendar(){
 }
 
 function render(){
-  const p=+S.phase,d=S.day,prog=program();
+  const p=+S.phase,d=S.day,programDay=programDayFor(d,S.programWeek),prog=program();
   $("todayTitle").textContent=prog[0];
-  $("todayMeta").textContent=prog[1]+(S.session==="night"?" • backup malam":" • sesi pagi utama");
+  const shiftedNote=programDay!==d?` • Program ${DAYS[programDay]} digeser ke ${DAYS[d]}`:"";
+  $("todayMeta").textContent=prog[1]+(S.session==="night"?" • backup malam":" • sesi pagi utama")+shiftedNote;
   $("dateChip").textContent=new Intl.DateTimeFormat("id-ID",{weekday:"long",day:"numeric",month:"short"}).format(new Date());
   const phaseName=p===1?"Bodyweight":p===2?"Dumbbell + Band":"Gym";
   $("phaseChip").textContent=phaseName;
@@ -1083,15 +1187,20 @@ function render(){
   $("weekStrip").innerHTML=DAYS.map((x,i)=>{
     const done=S.done[doneKey(i)],skipped=S.skipped[skipKey(i)];
     const state=done?"completed":skipped?"skipped":"";
-    return `<div class="day ${i===d?"active":""} ${state}" data-day="${i}"><div class="d1">Hari</div><div class="d2">${i+1}</div></div>`;
+    return `<div class="day ${i===d?"active":""} ${state}" data-day="${i}"><div class="d2">${x}</div></div>`;
   }).join("");
   $("exerciseList").innerHTML=prog[2].map((e,i)=>`<div class="exercise ${S.exDone[exKey(i)]?"done":""}" data-ex="${i}"><button class="check">${S.exDone[exKey(i)]?"✓":""}</button><div><div class="ex-title">${e[0]}</div><div class="ex-meta">${e[1]} • rest ${e[2]} dtk</div></div><button class="btn secondary timer-btn" data-manual="${i}">Mulai</button></div>`).join("");
-  $("completeDay").textContent="Selesai";
+  const dayAlreadyDone=!!S.done[doneKey(d)];
+  $("completeDay").textContent=dayAlreadyDone?"Batal Selesai":"Selesai";
   $("skipDayBtn").textContent="Lewati";
   const allExercisesChecked=allExercisesDoneFor(d,p,S.programWeek);
-  $("completeDay").disabled=!!S.done[doneKey(d)]||!allExercisesChecked;
-  $("completeDay").title=S.done[doneKey(d)]?"Hari ini sudah selesai":allExercisesChecked?"Semua latihan sudah dicentang":"Centang semua latihan terlebih dahulu";
-  $("skipDayBtn").disabled=!!S.done[doneKey(d)];
+  $("completeDay").disabled=!dayAlreadyDone&&!allExercisesChecked;
+  $("completeDay").title=dayAlreadyDone
+    ?"Batalkan status selesai untuk "+DAYS[d]
+    :allExercisesChecked
+      ?"Semua latihan sudah dicentang"
+      :"Centang semua latihan terlebih dahulu";
+  $("skipDayBtn").disabled=!!S.done[doneKey(d)]||!!S.skipped[skipKey(d)];
   $("resumeWorkout").style.display=S.guide&&S.guide.week===S.programWeek&&S.guide.phase===p&&S.guide.day===d&&S.guide.status!=="finished"?"inline-block":"none";
 
   const handled=weekHandledCount();
@@ -1114,7 +1223,7 @@ function render(){
   const pending=firstPendingDay();
   $("weekProgressNote").textContent=weekNeedsFinish
     ? (dc>=MIN_WEEK_DAYS?`Semua 7 Hari Program sudah dilalui. Minggu ini ${dc}/7 (${weekPercent(dc)}%) dan siap diselesaikan.`:`Semua 7 Hari Program sudah dilalui, tetapi progress baru ${dc}/7 (${weekPercent(dc)}%). Selesaikan minimal 5 hari untuk dapat lanjut.`)
-    : `Minggu Program ${S.programWeek} • Selesai ${dc}/7 (${weekPercent(dc)}%)${skippedCount?` • Terlewat ${skippedCount}`:""}${pending!==null?` • Berikutnya Hari ${pending+1}`:""}.`;
+    : `Minggu Program ${S.programWeek} • Selesai ${dc}/7 (${weekPercent(dc)}%)${skippedCount?` • Terlewat ${skippedCount}`:""}${pending!==null?` • Berikutnya ${DAYS[pending]}${programDayFor(pending,S.programWeek)!==pending?` menjalankan Program ${DAYS[programDayFor(pending,S.programWeek)]}`:""}`:""}.`;
 
   $("weekHistory").innerHTML=S.weekHistory.length
     ? S.weekHistory.slice(0,4).map(h=>{
@@ -1136,7 +1245,19 @@ $("durationSelect").onchange=e=>{S.duration=+e.target.value;save();render()};
 $("completeDay").onclick=()=>{
   const currentDay=S.day;
   const k=doneKey(currentDay);
-  if(S.done[k])return;
+
+  // Fitur Batal Selesai: checklist latihan tetap disimpan,
+  // hanya status hari dan catatan kalender yang dibatalkan.
+  if(S.done[k]){
+    delete S.done[k];
+    delete S.dayDates[k];
+    removeCalendarEvent(currentDay,S.programWeek,"done");
+    save();
+    refreshCalendarNow();
+    render();
+    return;
+  }
+
   if(!allExercisesDoneFor(currentDay,+S.phase,S.programWeek))return;
 
   markProgramDayDone(currentDay);
@@ -1147,10 +1268,19 @@ $("completeDay").onclick=()=>{
 };
 
 $("skipDayBtn").onclick=()=>{
-  const currentDay=S.day; const k=skipKey(currentDay);
-  if(S.done[doneKey(currentDay)])return;
-  if(S.skipped[k]){delete S.skipped[k];delete S.dayDates[k];removeCalendarEvent(currentDay,S.programWeek,"skipped");save();render();return;}
-  stopGuideTimer(); S.guide=null; markProgramDaySkipped(currentDay); save(); advanceToNextPendingDay(); save(); hideGuide(); render();
+  const currentDay=S.day;
+  if(S.done[doneKey(currentDay)]||S.skipped[skipKey(currentDay)])return;
+
+  stopGuideTimer();
+  S.guide=null;
+  markProgramDaySkipped(currentDay);
+  save();
+
+  // Hari berikutnya mendapat program yang tadinya dijadwalkan hari ini.
+  advanceToNextPendingDay();
+  save();
+  hideGuide();
+  render();
 };
 $("resetAll").onclick=()=>{if(confirm("Reset semua progress workout?")){const theme=localStorage.getItem(THEME_KEY),accent=localStorage.getItem(ACCENT_KEY);localStorage.removeItem("cgWorkoutState");if(theme)localStorage.setItem(THEME_KEY,theme);if(accent)localStorage.setItem(ACCENT_KEY,accent);location.reload()}};
 $("themeToggleTop").onclick=()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark");
@@ -1178,7 +1308,13 @@ let guideTimer=null;
 function stopGuideTimer(){if(guideTimer){clearInterval(guideTimer);guideTimer=null}}
 function guideStateFrom(startExercise=0){
   return {
-    week:S.programWeek,phase:+S.phase,day:S.day,exercise:startExercise,set:1,status:"exercise",
+    week:S.programWeek,
+    phase:+S.phase,
+    day:S.day,
+    programDay:programDayFor(S.day,S.programWeek),
+    exercise:startExercise,
+    set:1,
+    status:"exercise",
     remaining:0,restTotal:0,timedTotal:0,timedSide:1,pendingSet:0,paused:false
   };
 }
@@ -1189,8 +1325,15 @@ $("startWorkout").onclick=()=>startGuide(0);
 $("resumeWorkout").onclick=()=>{showGuide();renderGuide()};
 $("exitGuide").onclick=()=>{stopGuideTimer();hideGuide();};
 
+function guideProgramDay(g){
+  return g.programDay!=null?g.programDay:programDayFor(g.day,g.week);
+}
+function guideProgram(g){
+  return P[g.phase][guideProgramDay(g)];
+}
+
 function overallProgress(g){
-  const exs=P[g.phase][g.day][2];
+  const exs=guideProgram(g)[2];
   let total=0,done=0;
   exs.forEach((e,i)=>{const c=setCount(e[1]);total+=c;if(i<g.exercise)done+=c;else if(i===g.exercise)done+=Math.max(0,g.set-1)});
   return total?done/total*100:0;
@@ -1218,7 +1361,7 @@ function runTimedTimer(){
     g.remaining=Math.max(0,g.remaining-1);
 
     if(g.remaining<=0){
-      const e=P[g.phase][g.day][2][g.exercise];
+      const e=guideProgram(g)[2][g.exercise];
       const ti=timedInfo(e[1]);
 
       // Bila gerakan per sisi, otomatis lanjut ke sisi kedua.
@@ -1257,7 +1400,7 @@ function startTimedSet(info){
 
 function finishTimedSet(){
   const g=S.guide;if(!g)return;
-  const e=P[g.phase][g.day][2][g.exercise];
+  const e=guideProgram(g)[2][g.exercise];
   const totalSets=setCount(e[1]);
   if(g.set>=totalSets) markCurrentExerciseDone();
   g.paused=false;
@@ -1287,7 +1430,7 @@ function startRest(sec){
 }
 function finishSet(){
   const g=S.guide;if(!g)return;
-  const e=P[g.phase][g.day][2][g.exercise];
+  const e=guideProgram(g)[2][g.exercise];
   const totalSets=setCount(e[1]);
   if(g.set>=totalSets){
     markCurrentExerciseDone();
@@ -1296,7 +1439,7 @@ function finishSet(){
 }
 function advanceAfterRest(){
   const g=S.guide;if(!g)return;
-  const exs=P[g.phase][g.day][2],e=exs[g.exercise],totalSets=setCount(e[1]);
+  const exs=guideProgram(g)[2],e=exs[g.exercise],totalSets=setCount(e[1]);
   if(g.set<totalSets){
     const ti=timedInfo(e[1]);
     if(ti){
@@ -1320,7 +1463,7 @@ function skipRest(){stopGuideTimer();advanceAfterRest()}
 function skipExercise(){
   const g=S.guide;if(!g)return;
   stopGuideTimer();
-  const exs=P[g.phase][g.day][2];
+  const exs=guideProgram(g)[2];
   if(g.exercise<exs.length-1){
     g.exercise++;g.set=1;g.pendingSet=0;g.status="exercise";g.remaining=0;g.timedSide=1;g.paused=false;
     save();render();renderGuide();
@@ -1331,9 +1474,9 @@ function skipExercise(){
 
 function renderGuide(){
   const g=S.guide;if(!g)return;
-  const exs=P[g.phase][g.day][2];
+  const exs=guideProgram(g)[2];
   $("guideProgress").style.width=Math.min(100,overallProgress(g))+"%";
-  $("guideModeLabel").textContent=`${P[g.phase][g.day][0]} • ${g.exercise+1}/${exs.length}`;
+  $("guideModeLabel").textContent=`${guideProgram(g)[0]} • ${g.exercise+1}/${exs.length}`;
 
   if(g.status==="finished"){
     const complete=allExercisesDoneFor(g.day,g.phase,g.week);
@@ -1549,6 +1692,7 @@ if(mobileMenuToggle&&mobileMenu){
   });
 }
 
+rolloverCalendarWeekIfNeeded();
 render();
 if(S.guide&&S.guide.week===S.programWeek&&S.guide.phase===+S.phase&&S.guide.day===S.day&&S.guide.status!=="finished"){
   $("resumeWorkout").style.display="inline-block";
